@@ -1,0 +1,13 @@
+[build]
+  base    = "client"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA fallback so React Router v7 client routes resolve on direct navigation.
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
