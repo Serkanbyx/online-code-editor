@@ -3,6 +3,27 @@ import { SUPPORTED_LANGUAGES } from '../utils/constants.js';
 import * as pistonClient from '../utils/pistonClient.js';
 
 const supportedLanguageSet = new Set(SUPPORTED_LANGUAGES);
+const runTimestamps = [];
+const runWindowMs = 24 * 60 * 60 * 1000;
+
+function pruneRunTimestamps(now = Date.now()) {
+  const windowStart = now - runWindowMs;
+
+  while (runTimestamps.length > 0 && runTimestamps[0] < windowStart) {
+    runTimestamps.shift();
+  }
+}
+
+function recordSuccessfulRun() {
+  const now = Date.now();
+  pruneRunTimestamps(now);
+  runTimestamps.push(now);
+}
+
+export function getRunsLast24h() {
+  pruneRunTimestamps();
+  return runTimestamps.length;
+}
 
 function readRuntimeNames(runtime) {
   return [runtime.language, ...(runtime.aliases || [])].filter(Boolean);
@@ -84,6 +105,7 @@ export async function runCode(req, res) {
     stdin,
   });
   const run = result.run || {};
+  recordSuccessfulRun();
 
   res.json({
     stdout: run.stdout || '',

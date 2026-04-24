@@ -10,6 +10,7 @@ import errorHandler from './middleware/errorHandler.js';
 import notFound from './middleware/notFound.js';
 import { globalLimiter } from './middleware/rateLimiters.js';
 import sanitize from './middleware/sanitize.js';
+import adminRoutes from './routes/adminRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import codeRoutes from './routes/codeRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
@@ -58,6 +59,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/code', codeRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/likes', likeRoutes);
