@@ -10,19 +10,29 @@ import notFound from './middleware/notFound.js';
 import { globalLimiter } from './middleware/rateLimiters.js';
 import sanitize from './middleware/sanitize.js';
 import authRoutes from './routes/authRoutes.js';
+import codeRoutes from './routes/codeRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
 import likeRoutes from './routes/likeRoutes.js';
 import roomRoutes from './routes/roomRoutes.js';
 import snippetRoutes from './routes/snippetRoutes.js';
 
 const app = express();
+const globalJsonParser = express.json({ limit: '64kb' });
 
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
 app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
-app.use(express.json({ limit: '64kb' }));
+app.use('/api/code', express.json({ limit: '96kb' }));
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/code')) {
+    next();
+    return;
+  }
+
+  globalJsonParser(req, res, next);
+});
 app.use(express.urlencoded({ extended: true, limit: '64kb' }));
 app.use(sanitize);
 
@@ -41,6 +51,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/code', codeRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/likes', likeRoutes);
 app.use('/api/rooms', roomRoutes);
