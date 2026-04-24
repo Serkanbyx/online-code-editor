@@ -10,6 +10,7 @@ import notFound from './middleware/notFound.js';
 import { globalLimiter } from './middleware/rateLimiters.js';
 import sanitize from './middleware/sanitize.js';
 import authRoutes from './routes/authRoutes.js';
+import likeRoutes from './routes/likeRoutes.js';
 import snippetRoutes from './routes/snippetRoutes.js';
 
 const app = express();
@@ -38,6 +39,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/likes', likeRoutes);
 app.use('/api/snippets', snippetRoutes);
 
 app.use(notFound);
