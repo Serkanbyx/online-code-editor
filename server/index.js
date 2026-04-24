@@ -18,6 +18,7 @@ import profileRoutes from './routes/profileRoutes.js';
 import roomRoutes from './routes/roomRoutes.js';
 import snippetRoutes from './routes/snippetRoutes.js';
 import { initSocketServer } from './sockets/index.js';
+import { attachYjsToServer } from './sockets/yjsServer.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 
 const app = express();
@@ -69,6 +70,7 @@ app.use(errorHandler);
 
 await connectDB();
 initSocketServer(httpServer);
+attachYjsToServer(httpServer);
 
 httpServer.listen(env.PORT, () => {
   console.log(`Server running on port ${env.PORT}`);
