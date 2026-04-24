@@ -2,9 +2,16 @@ import mongoose from 'mongoose';
 
 import Snippet from '../models/Snippet.js';
 import ApiError from '../utils/ApiError.js';
+import escapeRegex from '../utils/escapeRegex.js';
 
 const snippetNotFoundMessage = 'Snippet not found';
 const listLimitDefault = 12;
+const publicSortMap = {
+  newest: { createdAt: -1 },
+  oldest: { createdAt: 1 },
+  mostLiked: { likesCount: -1, createdAt: -1 },
+  mostViewed: { views: -1, createdAt: -1 },
+};
 
 function pickDefined(source, allowedKeys) {
   return allowedKeys.reduce((result, key) => {
@@ -62,6 +69,37 @@ function buildMySnippetsFilter(userId, visibility) {
   return filter;
 }
 
+function buildPublicSnippetsFilter(query) {
+  const filter = {
+    isPublic: true,
+    status: 'active',
+  };
+  const searchQuery = (query.q || '').trim();
+
+  if (searchQuery) {
+    const escapedSearchQuery = escapeRegex(searchQuery);
+    const searchRegex = { $regex: escapedSearchQuery, $options: 'i' };
+
+    filter.$or = [{ title: searchRegex }, { description: searchRegex }, { tags: searchRegex }];
+  }
+
+  if (query.language) {
+    filter.language = query.language;
+  }
+
+  if (query.tag) {
+    filter.tags = query.tag;
+  }
+
+  return filter;
+}
+
+function hideSnippetSource(snippet) {
+  const item = snippet.toJSON();
+  delete item.code;
+  return item;
+}
+
 async function cascadeDeleteSnippetData(snippetId) {
   const db = mongoose.connection.db;
 
@@ -107,6 +145,24 @@ export async function getMySnippets(req, res) {
 
   res.json({
     items,
+    page,
+    totalPages: Math.ceil(total / limit) || 1,
+    total,
+  });
+}
+
+export async function getPublicSnippets(req, res) {
+  const { page, limit, skip } = readPagination(req.query);
+  const filter = buildPublicSnippetsFilter(req.query);
+  const sort = publicSortMap[req.query.sort] || publicSortMap.newest;
+
+  const [snippets, total] = await Promise.all([
+    Snippet.find(filter).sort(sort).skip(skip).limit(limit).populate('author', 'username displayName avatarUrl'),
+    Snippet.countDocuments(filter),
+  ]);
+
+  res.json({
+    items: snippets.map(hideSnippetSource),
     page,
     totalPages: Math.ceil(total / limit) || 1,
     total,

@@ -6,6 +6,7 @@ import { SUPPORTED_LANGUAGES } from '../utils/constants.js';
 
 const tagPattern = /^[a-z0-9-]+$/;
 const uuidV4Pattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const publicSortOptions = ['newest', 'oldest', 'mostLiked', 'mostViewed'];
 
 function validateRequest(req, _res, next) {
   const result = validationResult(req);
@@ -70,6 +71,27 @@ export const validateUpdateSnippet = [
   body('code').optional().isString().isLength({ max: 100000 }).withMessage('Code must be at most 100,000 characters.'),
   body('isPublic').optional().isBoolean().withMessage('isPublic must be a boolean.').toBoolean(),
   ...tagValidators,
+  validateRequest,
+];
+
+export const validatePublicQuery = [
+  query('q').optional({ values: 'falsy' }).trim().isLength({ max: 80 }).withMessage('Search query must be at most 80 characters.'),
+  query('language').optional({ values: 'falsy' }).isIn(SUPPORTED_LANGUAGES).withMessage('Unsupported language.'),
+  query('tag')
+    .optional({ values: 'falsy' })
+    .trim()
+    .toLowerCase()
+    .isLength({ min: 1, max: 24 })
+    .withMessage('Tag must be 1-24 characters.')
+    .matches(tagPattern)
+    .withMessage('Tag may only contain lowercase letters, numbers, and hyphens.'),
+  query('sort').optional({ values: 'falsy' }).isIn(publicSortOptions).withMessage('Sort must be newest, oldest, mostLiked, or mostViewed.'),
+  query('page')
+    .optional({ values: 'falsy' })
+    .customSanitizer((value) => Math.max(Number.parseInt(value, 10) || 1, 1)),
+  query('limit')
+    .optional({ values: 'falsy' })
+    .customSanitizer((value) => Math.min(Math.max(Number.parseInt(value, 10) || 12, 1), 50)),
   validateRequest,
 ];
 
