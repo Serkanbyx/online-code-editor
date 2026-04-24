@@ -6,6 +6,10 @@ import { SUPPORTED_LANGUAGES } from '../utils/constants.js';
 
 const adminRoles = ['user', 'admin'];
 const moderationStatuses = ['active', 'hidden', 'removed'];
+const reportActions = ['noop', 'hideTarget', 'removeTarget', 'banUser'];
+const reportStatuses = ['open', 'resolved', 'dismissed'];
+const reportResolutionStatuses = ['resolved', 'dismissed'];
+const reportTargetTypes = ['snippet', 'comment'];
 
 function validateRequest(req, _res, next) {
   const result = validationResult(req);
@@ -75,6 +79,14 @@ export const validateAdminCommentList = [
   validateRequest,
 ];
 
+export const validateAdminReportList = [
+  query('status').optional({ values: 'falsy' }).isIn(reportStatuses).withMessage('Status must be open, resolved, or dismissed.'),
+  query('targetType').optional({ values: 'falsy' }).isIn(reportTargetTypes).withMessage('targetType must be snippet or comment.'),
+  query('page').optional({ values: 'falsy' }).toInt().isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
+  query('limit').optional({ values: 'falsy' }).toInt().isInt({ min: 1, max: 50 }).withMessage('Limit must be between 1 and 50.'),
+  validateRequest,
+];
+
 export const validateModerationStatus = [
   body('status').isIn(moderationStatuses).withMessage('Status must be active, hidden, or removed.'),
   validateRequest,
@@ -88,5 +100,11 @@ export const validateUpdateUserRole = [
 export const validateBanUser = [
   body('banned').isBoolean().withMessage('banned must be a boolean.').toBoolean(),
   body('reason').optional({ values: 'falsy' }).trim().isLength({ max: 240 }).withMessage('Reason must be at most 240 characters.').escape(),
+  validateRequest,
+];
+
+export const validateResolveReport = [
+  body('status').isIn(reportResolutionStatuses).withMessage('Status must be resolved or dismissed.'),
+  body('action').isIn(reportActions).withMessage('Action must be noop, hideTarget, removeTarget, or banUser.'),
   validateRequest,
 ];

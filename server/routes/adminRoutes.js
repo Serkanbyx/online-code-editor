@@ -7,22 +7,26 @@ import {
   getDashboardStats,
   getUserById,
   listComments,
+  listReports,
   listSnippets,
   listUsers,
   moderateComment,
   moderateSnippet,
+  resolveReport,
   updateUserRole,
 } from '../controllers/adminController.js';
 import { adminOnly, protect } from '../middleware/auth.js';
 import { adminLimiter } from '../middleware/rateLimiters.js';
 import {
   validateAdminCommentList,
+  validateAdminReportList,
   validateAdminResourceId,
   validateAdminSnippetList,
   validateAdminUserId,
   validateAdminUserList,
   validateBanUser,
   validateModerationStatus,
+  validateResolveReport,
   validateUpdateUserRole,
 } from '../validators/adminValidator.js';
 
@@ -41,5 +45,7 @@ router.patch('/snippets/:id/status', validateAdminResourceId(), validateModerati
 router.delete('/snippets/:id', validateAdminResourceId(), deleteSnippetAsAdmin);
 router.get('/comments', validateAdminCommentList, listComments);
 router.patch('/comments/:id/status', validateAdminResourceId(), validateModerationStatus, moderateComment);
+router.get('/reports', validateAdminReportList, listReports);
+router.patch('/reports/:id', validateAdminResourceId(), validateResolveReport, resolveReport);
 
 export default router;

@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+
 import Comment from '../models/Comment.js';
 import Like from '../models/Like.js';
 import Report from '../models/Report.js';
@@ -10,7 +12,12 @@ import { getRunsLast24h } from './codeController.js';
 
 const listLimitDefault = 12;
 const safeUserFields = 'username displayName email role avatarUrl bio isBanned bannedReason lastLoginAt createdAt updatedAt';
+const safeReporterFields = 'username displayName avatarUrl';
 const removedCommentContent = '[removed by moderator]';
+const reportTargetModels = {
+  snippet: Snippet,
+  comment: Comment,
+};
 
 function readPagination(query) {
   const page = Number.isInteger(query.page) ? query.page : Number.parseInt(query.page, 10) || 1;
@@ -78,6 +85,20 @@ function buildCommentFilter(query) {
 
   if (query.status) {
     filter.status = query.status;
+  }
+
+  return filter;
+}
+
+function buildReportFilter(query) {
+  const filter = {};
+
+  if (query.status) {
+    filter.status = query.status;
+  }
+
+  if (query.targetType) {
+    filter.targetType = query.targetType;
   }
 
   return filter;
@@ -157,14 +178,119 @@ async function deleteSnippetData(snippet) {
   await Promise.all([Comment.deleteMany({ snippet: snippet._id }), Like.deleteMany({ snippet: snippet._id })]);
 }
 
-async function reconcileCommentCount(comment, newStatus) {
+async function reconcileCommentCount(comment, newStatus, session) {
   const oldStatus = comment.status;
+  const options = session ? { session } : undefined;
 
   if (oldStatus === 'active' && newStatus !== 'active') {
-    await Snippet.findByIdAndUpdate(comment.snippet, { $inc: { commentsCount: -1 } });
+    await Snippet.findByIdAndUpdate(comment.snippet, { $inc: { commentsCount: -1 } }, options);
   } else if (oldStatus !== 'active' && newStatus === 'active') {
-    await Snippet.findByIdAndUpdate(comment.snippet, { $inc: { commentsCount: 1 } });
+    await Snippet.findByIdAndUpdate(comment.snippet, { $inc: { commentsCount: 1 } }, options);
   }
+}
+
+async function populateReportTargets(reports) {
+  const targetIdsByType = reports.reduce(
+    (result, report) => {
+      if (result[report.targetType]) {
+        result[report.targetType].push(report.targetId);
+      }
+
+      return result;
+    },
+    { snippet: [], comment: [] }
+  );
+
+  const [snippets, comments] = await Promise.all([
+    Snippet.find({ _id: { $in: targetIdsByType.snippet } }).select('-code').populate('author', safeReporterFields).lean(),
+    Comment.find({ _id: { $in: targetIdsByType.comment } })
+      .populate('author', safeReporterFields)
+      .populate('snippet', 'title language status isPublic author')
+      .lean(),
+  ]);
+
+  const targetsById = new Map([...snippets, ...comments].map((target) => [target._id.toString(), target]));
+
+  return reports.map((report) => ({
+    ...report,
+    target: targetsById.get(report.targetId.toString()) || null,
+  }));
+}
+
+async function getReportTarget(report, session) {
+  const TargetModel = reportTargetModels[report.targetType];
+
+  if (!TargetModel) {
+    throw new ApiError(400, 'Invalid report target type');
+  }
+
+  const target = await TargetModel.findById(report.targetId).session(session);
+
+  if (!target) {
+    throw new ApiError(404, 'Report target not found');
+  }
+
+  return target;
+}
+
+async function banReportTargetAuthor(report, target, currentUserId, session) {
+  const user = await User.findById(target.author).select(safeUserFields).session(session);
+
+  if (!user) {
+    throw new ApiError(404, 'Target author not found');
+  }
+
+  if (isSameUser(user._id, currentUserId)) {
+    throw new ApiError(400, 'Cannot ban yourself');
+  }
+
+  if (isSameUser(user._id, report.reporter)) {
+    throw new ApiError(400, 'Cannot ban a reporter through their own report');
+  }
+
+  if (user.role === 'admin') {
+    throw new ApiError(400, 'Cannot ban an admin through a report');
+  }
+
+  user.isBanned = true;
+  user.bannedReason = `Resolved from report ${report._id}`;
+  await user.save({ session });
+}
+
+async function applyReportAction(report, action, currentUserId, session) {
+  if (action === 'noop') {
+    return;
+  }
+
+  const target = await getReportTarget(report, session);
+
+  if (action === 'hideTarget') {
+    if (report.targetType === 'comment') {
+      await reconcileCommentCount(target, 'hidden', session);
+    }
+
+    target.status = 'hidden';
+    await target.save({ session });
+    return;
+  }
+
+  if (action === 'removeTarget') {
+    if (report.targetType === 'comment') {
+      await reconcileCommentCount(target, 'removed', session);
+      target.content = removedCommentContent;
+    }
+
+    target.status = 'removed';
+    await target.save({ session });
+    return;
+  }
+
+  if (action === 'banUser') {
+    await banReportTargetAuthor(report, target, currentUserId, session);
+    return;
+  }
+
+  throw new ApiError(400, 'Invalid report action');
 }
 
 export async function getDashboardStats(_req, res) {
@@ -385,5 +511,97 @@ export async function moderateComment(req, res) {
   res.json({
     comment,
     ...(message ? { message } : {}),
+  });
+}
+
+export async function listReports(req, res) {
+  const { page, limit, skip } = readPagination(req.query);
+  const filter = buildReportFilter(req.query);
+
+  const [rawItems, total] = await Promise.all([
+    Report.aggregate([
+      { $match: filter },
+      {
+        $addFields: {
+          statusRank: {
+            $switch: {
+              branches: [
+                { case: { $eq: ['$status', 'open'] }, then: 0 },
+                { case: { $eq: ['$status', 'resolved'] }, then: 1 },
+                { case: { $eq: ['$status', 'dismissed'] }, then: 2 },
+              ],
+              default: 3,
+            },
+          },
+        },
+      },
+      { $sort: { statusRank: 1, createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+      { $project: { statusRank: 0, __v: 0 } },
+    ]),
+    Report.countDocuments(filter),
+  ]);
+
+  const populatedReports = await Report.populate(rawItems, [
+    { path: 'reporter', select: safeReporterFields },
+    { path: 'resolvedBy', select: safeReporterFields },
+  ]);
+  const items = await populateReportTargets(populatedReports);
+
+  res.json({
+    items,
+    page,
+    totalPages: Math.ceil(total / limit) || 1,
+    total,
+  });
+}
+
+export async function resolveReport(req, res) {
+  const session = await mongoose.startSession();
+  let resolvedReportId;
+  let responseMessage;
+
+  try {
+    await session.withTransaction(async () => {
+      const report = await Report.findById(req.params.id).session(session);
+
+      if (!report) {
+        throw new ApiError(404, 'Report not found');
+      }
+
+      if (report.status !== 'open') {
+        resolvedReportId = report._id;
+        responseMessage = 'Already resolved';
+        return;
+      }
+
+      await applyReportAction(report, req.body.action, req.user._id, session);
+
+      report.status = req.body.status;
+      report.resolvedBy = req.user._id;
+      report.resolvedAt = new Date();
+      await report.save({ session });
+
+      resolvedReportId = report._id;
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  const resolvedReport = await Report.findById(resolvedReportId)
+    .populate('reporter', safeReporterFields)
+    .populate('resolvedBy', safeReporterFields)
+    .lean();
+
+  if (!resolvedReport) {
+    throw new ApiError(404, 'Report not found');
+  }
+
+  const [reportWithTarget] = await populateReportTargets([resolvedReport]);
+
+  res.json({
+    ...(responseMessage ? { message: responseMessage } : {}),
+    report: reportWithTarget,
   });
 }
