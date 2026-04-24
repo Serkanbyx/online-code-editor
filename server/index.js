@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
+import { createServer } from 'http';
 import morgan from 'morgan';
 
 import { connectDB } from './config/db.js';
@@ -16,9 +17,11 @@ import likeRoutes from './routes/likeRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
 import roomRoutes from './routes/roomRoutes.js';
 import snippetRoutes from './routes/snippetRoutes.js';
+import { initSocketServer } from './sockets/index.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 
 const app = express();
+const httpServer = createServer(app);
 const globalJsonParser = express.json({ limit: '64kb' });
 
 app.disable('x-powered-by');
@@ -65,7 +68,8 @@ app.use(notFound);
 app.use(errorHandler);
 
 await connectDB();
+initSocketServer(httpServer);
 
-app.listen(env.PORT, () => {
+httpServer.listen(env.PORT, () => {
   console.log(`Server running on port ${env.PORT}`);
 });
