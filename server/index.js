@@ -15,6 +15,7 @@ import commentRoutes from './routes/commentRoutes.js';
 import likeRoutes from './routes/likeRoutes.js';
 import roomRoutes from './routes/roomRoutes.js';
 import snippetRoutes from './routes/snippetRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 
 const app = express();
 const globalJsonParser = express.json({ limit: '64kb' });
@@ -56,6 +57,7 @@ app.use('/api/comments', commentRoutes);
 app.use('/api/likes', likeRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/snippets', snippetRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

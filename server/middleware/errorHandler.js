@@ -1,3 +1,5 @@
+import multer from 'multer';
+
 import env from '../config/env.js';
 import ApiError from '../utils/ApiError.js';
 
@@ -13,7 +15,10 @@ export default function errorHandler(error, _req, res, _next) {
   let message = 'Internal server error';
   let errors;
 
-  if (error.name === 'ValidationError') {
+  if (error instanceof multer.MulterError) {
+    statusCode = 400;
+    message = error.code === 'LIMIT_FILE_SIZE' ? 'Avatar must be 2 MB or smaller' : 'Invalid avatar upload';
+  } else if (error.name === 'ValidationError') {
     statusCode = 400;
     message = 'Validation failed';
     errors = formatMongooseValidation(error);
