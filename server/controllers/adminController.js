@@ -10,6 +10,7 @@ import { getRunsLast24h } from './codeController.js';
 
 const listLimitDefault = 12;
 const safeUserFields = 'username displayName email role avatarUrl bio isBanned bannedReason lastLoginAt createdAt updatedAt';
+const removedCommentContent = '[removed by moderator]';
 
 function readPagination(query) {
   const page = Number.isInteger(query.page) ? query.page : Number.parseInt(query.page, 10) || 1;
@@ -45,6 +46,49 @@ function buildUserFilter(query) {
   }
 
   return filter;
+}
+
+function buildSnippetFilter(query) {
+  const filter = {};
+  const searchQuery = (query.q || '').trim();
+
+  if (searchQuery) {
+    const searchRegex = { $regex: escapeRegex(searchQuery), $options: 'i' };
+    filter.$or = [{ title: searchRegex }, { description: searchRegex }, { tags: searchRegex }];
+  }
+
+  if (query.status) {
+    filter.status = query.status;
+  }
+
+  if (query.language) {
+    filter.language = query.language;
+  }
+
+  return filter;
+}
+
+function buildCommentFilter(query) {
+  const filter = {};
+  const searchQuery = (query.q || '').trim();
+
+  if (searchQuery) {
+    filter.content = { $regex: escapeRegex(searchQuery), $options: 'i' };
+  }
+
+  if (query.status) {
+    filter.status = query.status;
+  }
+
+  return filter;
+}
+
+function buildContentRestoreMessage(oldStatus, newStatus) {
+  if (oldStatus === 'removed' && newStatus === 'active') {
+    return 'Comment restored as active, but original content was permanently removed.';
+  }
+
+  return undefined;
 }
 
 async function ensureCanRemoveAdmin(user) {
@@ -107,6 +151,20 @@ async function deleteUserData(user) {
     Snippet.deleteMany({ _id: { $in: snippetIds } }),
     Room.updateMany({ participants: user._id }, { $pull: { participants: user._id } }),
   ]);
+}
+
+async function deleteSnippetData(snippet) {
+  await Promise.all([Comment.deleteMany({ snippet: snippet._id }), Like.deleteMany({ snippet: snippet._id })]);
+}
+
+async function reconcileCommentCount(comment, newStatus) {
+  const oldStatus = comment.status;
+
+  if (oldStatus === 'active' && newStatus !== 'active') {
+    await Snippet.findByIdAndUpdate(comment.snippet, { $inc: { commentsCount: -1 } });
+  } else if (oldStatus !== 'active' && newStatus === 'active') {
+    await Snippet.findByIdAndUpdate(comment.snippet, { $inc: { commentsCount: 1 } });
+  }
 }
 
 export async function getDashboardStats(_req, res) {
@@ -233,4 +291,99 @@ export async function deleteUser(req, res) {
   await user.deleteOne();
 
   res.json({ message: 'User deleted' });
+}
+
+export async function listSnippets(req, res) {
+  const { page, limit, skip } = readPagination(req.query);
+  const filter = buildSnippetFilter(req.query);
+
+  const [items, total] = await Promise.all([
+    Snippet.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).select('-code').populate('author', 'username displayName avatarUrl').lean(),
+    Snippet.countDocuments(filter),
+  ]);
+
+  res.json({
+    items,
+    page,
+    totalPages: Math.ceil(total / limit) || 1,
+    total,
+  });
+}
+
+export async function moderateSnippet(req, res) {
+  const snippet = await Snippet.findById(req.params.id).select('-code');
+
+  if (!snippet) {
+    throw new ApiError(404, 'Snippet not found');
+  }
+
+  snippet.status = req.body.status;
+  await snippet.save();
+
+  res.json({ snippet });
+}
+
+export async function deleteSnippetAsAdmin(req, res) {
+  const snippet = await Snippet.findById(req.params.id).select('_id');
+
+  if (!snippet) {
+    throw new ApiError(404, 'Snippet not found');
+  }
+
+  await deleteSnippetData(snippet);
+  await snippet.deleteOne();
+
+  res.json({ message: 'Snippet deleted' });
+}
+
+export async function listComments(req, res) {
+  const { page, limit, skip } = readPagination(req.query);
+  const filter = buildCommentFilter(req.query);
+
+  const [items, total] = await Promise.all([
+    Comment.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('author', 'username displayName avatarUrl')
+      .populate('snippet', 'title language status isPublic author')
+      .lean(),
+    Comment.countDocuments(filter),
+  ]);
+
+  res.json({
+    items,
+    page,
+    totalPages: Math.ceil(total / limit) || 1,
+    total,
+  });
+}
+
+export async function moderateComment(req, res) {
+  const comment = await Comment.findById(req.params.id);
+
+  if (!comment) {
+    throw new ApiError(404, 'Comment not found');
+  }
+
+  const oldStatus = comment.status;
+  const newStatus = req.body.status;
+  const message = buildContentRestoreMessage(oldStatus, newStatus);
+
+  await reconcileCommentCount(comment, newStatus);
+
+  comment.status = newStatus;
+
+  if (oldStatus !== 'removed' && newStatus === 'removed') {
+    comment.content = removedCommentContent;
+  }
+
+  await comment.save();
+  await comment.populate('author', 'username displayName avatarUrl');
+  await comment.populate('snippet', 'title language status isPublic author');
+
+  res.json({
+    comment,
+    ...(message ? { message } : {}),
+  });
 }
