@@ -9,6 +9,7 @@ import errorHandler from './middleware/errorHandler.js';
 import notFound from './middleware/notFound.js';
 import { globalLimiter } from './middleware/rateLimiters.js';
 import sanitize from './middleware/sanitize.js';
+import authRoutes from './routes/authRoutes.js';
 
 const app = express();
 
@@ -34,6 +35,8 @@ app.get('/api/health', (_req, res) => {
     time: new Date().toISOString(),
   });
 });
+
+app.use('/api/auth', authRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
