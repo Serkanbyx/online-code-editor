@@ -1,6 +1,6 @@
-import { body, param, query, validationResult } from 'express-validator';
+import { body, param, query } from 'express-validator';
 
-import ApiError from '../utils/ApiError.js';
+import validate from '../middleware/validate.js';
 
 const usernamePattern = /^[a-z0-9_]+$/;
 const allowedRootKeys = new Set(['theme', 'editorTheme', 'fontSize', 'tabSize', 'keymap', 'fontFamily', 'language', 'wordWrap', 'minimap', 'lineNumbers']);
@@ -8,22 +8,6 @@ const allowedNestedKeys = {
   privacy: new Set(['showEmail', 'showLikedSnippets', 'showComments']),
   notifications: new Set(['commentOnSnippet', 'snippetForked', 'productUpdates']),
 };
-
-function validateRequest(req, _res, next) {
-  const result = validationResult(req);
-
-  if (result.isEmpty()) {
-    next();
-    return;
-  }
-
-  const errors = result.array().map((error) => ({
-    field: error.path,
-    message: error.msg,
-  }));
-
-  next(new ApiError(400, 'Validation failed', errors));
-}
 
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -59,24 +43,23 @@ function assertAllowedPreferencePayload(payload) {
   return true;
 }
 
-export const validateUsername = [
+export const validateUsername = validate([
   param('username')
     .trim()
     .toLowerCase()
     .isLength({ min: 3, max: 24 })
     .withMessage('Username must be 3-24 characters.')
     .matches(usernamePattern)
-    .withMessage('Username may only contain lowercase letters, numbers, and underscores.'),
-  validateRequest,
-];
+    .withMessage('Username may only contain lowercase letters, numbers, and underscores.')
+    .escape(),
+]);
 
-export const validatePagination = [
+export const validatePagination = validate([
   query('page').optional().toInt().isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
   query('limit').optional().toInt().isInt({ min: 1, max: 50 }).withMessage('Limit must be between 1 and 50.'),
-  validateRequest,
-];
+]);
 
-export const validateUpdatePreferences = [
+export const validateUpdatePreferences = validate([
   body().custom(assertAllowedPreferencePayload),
   body('theme').optional().isIn(['light', 'dark', 'system']).withMessage('Theme must be light, dark, or system.'),
   body('editorTheme').optional().isIn(['vs', 'vs-dark', 'hc-black', 'hc-light']).withMessage('Editor theme is not supported.'),
@@ -97,5 +80,4 @@ export const validateUpdatePreferences = [
   body('notifications.commentOnSnippet').optional().isBoolean().withMessage('commentOnSnippet must be a boolean.').toBoolean(),
   body('notifications.snippetForked').optional().isBoolean().withMessage('snippetForked must be a boolean.').toBoolean(),
   body('notifications.productUpdates').optional().isBoolean().withMessage('productUpdates must be a boolean.').toBoolean(),
-  validateRequest,
-];
+]);

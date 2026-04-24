@@ -1,7 +1,7 @@
-import { body, param, query, validationResult } from 'express-validator';
+import { body, param, query } from 'express-validator';
 import mongoose from 'mongoose';
 
-import ApiError from '../utils/ApiError.js';
+import validate from '../middleware/validate.js';
 import { SUPPORTED_LANGUAGES } from '../utils/constants.js';
 
 const adminRoles = ['user', 'admin'];
@@ -11,24 +11,8 @@ const reportStatuses = ['open', 'resolved', 'dismissed'];
 const reportResolutionStatuses = ['resolved', 'dismissed'];
 const reportTargetTypes = ['snippet', 'comment'];
 
-function validateRequest(req, _res, next) {
-  const result = validationResult(req);
-
-  if (result.isEmpty()) {
-    next();
-    return;
-  }
-
-  const errors = result.array().map((error) => ({
-    field: error.path,
-    message: error.msg,
-  }));
-
-  next(new ApiError(400, 'Validation failed', errors));
-}
-
 export function validateAdminUserId(paramName = 'id') {
-  return [
+  return validate([
     param(paramName).custom((value) => {
       if (!mongoose.Types.ObjectId.isValid(value)) {
         throw new Error('Invalid user id.');
@@ -36,12 +20,11 @@ export function validateAdminUserId(paramName = 'id') {
 
       return true;
     }),
-    validateRequest,
-  ];
+  ]);
 }
 
 export function validateAdminResourceId(paramName = 'id') {
-  return [
+  return validate([
     param(paramName).custom((value) => {
       if (!mongoose.Types.ObjectId.isValid(value)) {
         throw new Error('Invalid resource id.');
@@ -49,62 +32,53 @@ export function validateAdminResourceId(paramName = 'id') {
 
       return true;
     }),
-    validateRequest,
-  ];
+  ]);
 }
 
-export const validateAdminUserList = [
+export const validateAdminUserList = validate([
   query('q').optional({ values: 'falsy' }).trim().isLength({ max: 80 }).withMessage('Search query must be at most 80 characters.').escape(),
   query('role').optional({ values: 'falsy' }).isIn(adminRoles).withMessage('Role must be user or admin.'),
   query('banned').optional({ values: 'falsy' }).isBoolean().withMessage('banned must be a boolean.').toBoolean(),
   query('page').optional({ values: 'falsy' }).toInt().isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
   query('limit').optional({ values: 'falsy' }).toInt().isInt({ min: 1, max: 50 }).withMessage('Limit must be between 1 and 50.'),
-  validateRequest,
-];
+]);
 
-export const validateAdminSnippetList = [
+export const validateAdminSnippetList = validate([
   query('q').optional({ values: 'falsy' }).trim().isLength({ max: 80 }).withMessage('Search query must be at most 80 characters.').escape(),
   query('status').optional({ values: 'falsy' }).isIn(moderationStatuses).withMessage('Status must be active, hidden, or removed.'),
   query('language').optional({ values: 'falsy' }).isIn(SUPPORTED_LANGUAGES).withMessage('Unsupported language.'),
   query('page').optional({ values: 'falsy' }).toInt().isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
   query('limit').optional({ values: 'falsy' }).toInt().isInt({ min: 1, max: 50 }).withMessage('Limit must be between 1 and 50.'),
-  validateRequest,
-];
+]);
 
-export const validateAdminCommentList = [
+export const validateAdminCommentList = validate([
   query('q').optional({ values: 'falsy' }).trim().isLength({ max: 80 }).withMessage('Search query must be at most 80 characters.').escape(),
   query('status').optional({ values: 'falsy' }).isIn(moderationStatuses).withMessage('Status must be active, hidden, or removed.'),
   query('page').optional({ values: 'falsy' }).toInt().isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
   query('limit').optional({ values: 'falsy' }).toInt().isInt({ min: 1, max: 50 }).withMessage('Limit must be between 1 and 50.'),
-  validateRequest,
-];
+]);
 
-export const validateAdminReportList = [
+export const validateAdminReportList = validate([
   query('status').optional({ values: 'falsy' }).isIn(reportStatuses).withMessage('Status must be open, resolved, or dismissed.'),
   query('targetType').optional({ values: 'falsy' }).isIn(reportTargetTypes).withMessage('targetType must be snippet or comment.'),
   query('page').optional({ values: 'falsy' }).toInt().isInt({ min: 1 }).withMessage('Page must be a positive integer.'),
   query('limit').optional({ values: 'falsy' }).toInt().isInt({ min: 1, max: 50 }).withMessage('Limit must be between 1 and 50.'),
-  validateRequest,
-];
+]);
 
-export const validateModerationStatus = [
+export const validateModerationStatus = validate([
   body('status').isIn(moderationStatuses).withMessage('Status must be active, hidden, or removed.'),
-  validateRequest,
-];
+]);
 
-export const validateUpdateUserRole = [
+export const validateUpdateUserRole = validate([
   body('role').isIn(adminRoles).withMessage('Role must be user or admin.'),
-  validateRequest,
-];
+]);
 
-export const validateBanUser = [
+export const validateBanUser = validate([
   body('banned').isBoolean().withMessage('banned must be a boolean.').toBoolean(),
   body('reason').optional({ values: 'falsy' }).trim().isLength({ max: 240 }).withMessage('Reason must be at most 240 characters.').escape(),
-  validateRequest,
-];
+]);
 
-export const validateResolveReport = [
+export const validateResolveReport = validate([
   body('status').isIn(reportResolutionStatuses).withMessage('Status must be resolved or dismissed.'),
   body('action').isIn(reportActions).withMessage('Action must be noop, hideTarget, removeTarget, or banUser.'),
-  validateRequest,
-];
+]);
