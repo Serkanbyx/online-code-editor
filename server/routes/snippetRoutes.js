@@ -3,6 +3,7 @@ import { Router } from 'express';
 import {
   createSnippet,
   deleteSnippet,
+  forkSnippet,
   getMySnippets,
   getPublicSnippets,
   getSnippetById,
@@ -22,6 +23,7 @@ const router = Router();
 router.post('/', protect, validateCreateSnippet, createSnippet);
 router.get('/me', protect, validatePagination, getMySnippets);
 router.get('/public', optionalAuth, validatePublicQuery, getPublicSnippets);
+router.post('/:id/fork', protect, validateObjectId(), forkSnippet);
 router.get('/:id', optionalAuth, validateObjectId(), getSnippetById);
 router.patch('/:id', protect, validateObjectId(), validateUpdateSnippet, updateSnippet);
 router.delete('/:id', protect, validateObjectId(), deleteSnippet);

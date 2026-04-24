@@ -6,6 +6,7 @@ import escapeRegex from '../utils/escapeRegex.js';
 
 const snippetNotFoundMessage = 'Snippet not found';
 const listLimitDefault = 12;
+const titleMaxLength = 120;
 const publicSortMap = {
   newest: { createdAt: -1 },
   oldest: { createdAt: 1 },
@@ -33,6 +34,14 @@ function canManageSnippet(snippet, user) {
 
 function canViewSnippet(snippet, user) {
   return snippet.isPublic || canManageSnippet(snippet, user);
+}
+
+function canForkSnippet(snippet, user) {
+  return snippet.status === 'active' && (snippet.isPublic || isOwner(snippet, user));
+}
+
+function buildForkTitle(title) {
+  return `Fork of ${title}`.slice(0, titleMaxLength);
 }
 
 function readPagination(query) {
@@ -182,6 +191,28 @@ export async function getSnippetById(req, res) {
   }
 
   res.json({ snippet });
+}
+
+export async function forkSnippet(req, res) {
+  const sourceSnippet = await Snippet.findById(req.params.id);
+
+  if (!sourceSnippet || !canForkSnippet(sourceSnippet, req.user)) {
+    throw new ApiError(404, snippetNotFoundMessage);
+  }
+
+  const snippet = await Snippet.create({
+    title: buildForkTitle(sourceSnippet.title),
+    description: sourceSnippet.description,
+    language: sourceSnippet.language,
+    code: sourceSnippet.code,
+    tags: [...sourceSnippet.tags],
+    author: req.user._id,
+    isPublic: false,
+    forkedFrom: sourceSnippet._id,
+    status: 'active',
+  });
+
+  res.status(201).json({ snippet });
 }
 
 export async function updateSnippet(req, res) {
