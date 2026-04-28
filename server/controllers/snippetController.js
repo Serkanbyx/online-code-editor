@@ -190,6 +190,12 @@ export async function getSnippetById(req, res) {
     await snippet.save();
   }
 
+  // Populate the author projection the detail page expects (avatar + handle).
+  // Skip the populate roundtrip when the field has already been hydrated.
+  if (!snippet.populated('author')) {
+    await snippet.populate('author', 'username displayName avatarUrl');
+  }
+
   res.json({ snippet });
 }
 
