@@ -1,7 +1,8 @@
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 
-import Navbar from '../components/layout/Navbar.jsx';
+import Avatar from '../components/common/Avatar.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const ADMIN_NAV_ITEMS = [
   { to: '/admin/dashboard', label: 'Dashboard' },
@@ -21,6 +22,7 @@ function sidebarLinkClass({ isActive }) {
 export function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   const activeItem =
     ADMIN_NAV_ITEMS.find((item) => location.pathname.startsWith(item.to))?.to ??
@@ -28,7 +30,31 @@ export function AdminLayout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg text-fg">
-      <Navbar />
+      <header className="border-b border-fg/10 bg-bg/85 backdrop-blur">
+        <div className="container mx-auto flex min-h-16 items-center justify-between gap-4 px-4 py-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
+              Admin Panel
+            </p>
+            <h1 className="text-lg font-semibold tracking-tight text-fg">CodeNest Control</h1>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              to="/"
+              className="rounded-md border border-fg/10 bg-bg px-3 py-1.5 text-sm font-medium text-fg transition-colors hover:bg-fg/5"
+            >
+              View site
+            </Link>
+            <div className="hidden items-center gap-2 rounded-full border border-fg/10 bg-fg/5 py-1 pl-1 pr-3 sm:flex">
+              <Avatar user={user} size="sm" />
+              <span className="max-w-40 truncate text-sm font-medium text-fg">
+                {user?.displayName || user?.username || 'Admin'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </header>
 
       <div className="container mx-auto w-full flex-1 px-4 py-6">
         <div className="mb-4 md:hidden">

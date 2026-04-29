@@ -344,10 +344,11 @@ export async function getUserById(req, res) {
     throw new ApiError(404, 'User not found');
   }
 
-  const [snippetsCount, commentsCount, likesCount] = await Promise.all([
+  const [snippetsCount, commentsCount, likesCount, roomsCount] = await Promise.all([
     Snippet.countDocuments({ author: user._id }),
     Comment.countDocuments({ author: user._id }),
     Like.countDocuments({ user: user._id }),
+    Room.countDocuments({ participants: user._id }),
   ]);
 
   res.json({
@@ -357,6 +358,7 @@ export async function getUserById(req, res) {
         snippets: snippetsCount,
         comments: commentsCount,
         likes: likesCount,
+        rooms: roomsCount,
       },
     },
   });
