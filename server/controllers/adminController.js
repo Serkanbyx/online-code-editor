@@ -13,6 +13,7 @@ import { getRunsLast24h } from './codeController.js';
 const listLimitDefault = 12;
 const safeUserFields = 'username displayName email role avatarUrl bio isBanned bannedReason lastLoginAt createdAt updatedAt';
 const safeReporterFields = 'username displayName avatarUrl';
+const safeReportTargetAuthorFields = 'username displayName avatarUrl role';
 const removedCommentContent = '[removed by moderator]';
 const reportTargetModels = {
   snippet: Snippet,
@@ -202,9 +203,9 @@ async function populateReportTargets(reports) {
   );
 
   const [snippets, comments] = await Promise.all([
-    Snippet.find({ _id: { $in: targetIdsByType.snippet } }).select('-code').populate('author', safeReporterFields).lean(),
+    Snippet.find({ _id: { $in: targetIdsByType.snippet } }).select('-code').populate('author', safeReportTargetAuthorFields).lean(),
     Comment.find({ _id: { $in: targetIdsByType.comment } })
-      .populate('author', safeReporterFields)
+      .populate('author', safeReportTargetAuthorFields)
       .populate('snippet', 'title language status isPublic author')
       .lean(),
   ]);
@@ -583,6 +584,7 @@ export async function resolveReport(req, res) {
       report.status = req.body.status;
       report.resolvedBy = req.user._id;
       report.resolvedAt = new Date();
+      report.action = req.body.action;
       await report.save({ session });
 
       resolvedReportId = report._id;

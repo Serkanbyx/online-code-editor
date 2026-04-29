@@ -44,6 +44,11 @@ const reportSchema = new Schema(
       type: Date,
       default: null,
     },
+    action: {
+      type: String,
+      enum: ['noop', 'hideTarget', 'removeTarget', 'banUser'],
+      default: 'noop',
+    },
   },
   {
     timestamps: true,
