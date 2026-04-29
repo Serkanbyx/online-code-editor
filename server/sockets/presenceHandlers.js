@@ -1,3 +1,5 @@
+import Room from '../models/Room.js';
+import { SUPPORTED_LANGUAGES } from '../utils/constants.js';
 import { findAccessibleRoom, isValidRoomId, toPublicUser } from './socketUtils.js';
 
 const presenceByRoom = new Map();
@@ -44,6 +46,10 @@ function broadcastDisconnectedUserLeft(io, socket, roomId) {
   io.to(roomId).emit('room:userLeft', {
     userId: socket.user._id.toString(),
   });
+}
+
+function isRoomOwner(room, user) {
+  return Boolean(room?.owner && user?._id && room.owner.toString() === user._id.toString());
 }
 
 export default function registerPresenceHandlers(io, socket) {
@@ -95,6 +101,36 @@ export default function registerPresenceHandlers(io, socket) {
 
     if (didLeave) {
       broadcastUserLeft(socket, roomId);
+    }
+  });
+
+  socket.on('room:languageChange', async (payload = {}) => {
+    try {
+      const { roomId, language } = payload;
+
+      if (!isValidRoomId(roomId) || !SUPPORTED_LANGUAGES.includes(language)) {
+        emitSocketError(socket, 'Invalid language change payload.');
+        return;
+      }
+
+      if (!socket.rooms.has(roomId)) {
+        emitSocketError(socket, 'Join the room before changing language.');
+        return;
+      }
+
+      const room = await Room.findOne({ roomId }).select('owner language');
+
+      if (!isRoomOwner(room, socket.user)) {
+        emitSocketError(socket, 'Only the room owner can change language.');
+        return;
+      }
+
+      io.to(roomId).emit('room:languageChange', {
+        roomId,
+        language,
+      });
+    } catch {
+      emitSocketError(socket, 'Unable to broadcast language change.');
     }
   });
 

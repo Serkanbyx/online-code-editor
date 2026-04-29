@@ -3,10 +3,26 @@ import clsx from 'clsx';
 
 import LanguageSelect from './LanguageSelect.jsx';
 
+const STATUS_META = {
+  connecting: {
+    label: 'Connecting...',
+    className: 'border-yellow-400/30 bg-yellow-400/10 text-yellow-700 dark:text-yellow-300',
+  },
+  connected: {
+    label: 'Live',
+    className: 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300',
+  },
+  disconnected: {
+    label: 'Offline',
+    className: 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300',
+  },
+};
+
 export function EditorToolbar({
   room,
   isOwner,
   savingRoom,
+  status = 'disconnected',
   onRename,
   onLanguageChange,
   onThemeToggle,
@@ -15,6 +31,7 @@ export function EditorToolbar({
   onRun,
 }) {
   const [draftName, setDraftName] = useState(room?.name ?? '');
+  const statusMeta = STATUS_META[status] ?? STATUS_META.disconnected;
 
   useEffect(() => {
     setDraftName(room?.name ?? '');
@@ -61,6 +78,16 @@ export function EditorToolbar({
       </form>
 
       <div className="flex flex-wrap items-center gap-2">
+        <span
+          className={clsx(
+            'inline-flex h-9 items-center rounded-full border px-3 text-xs font-semibold',
+            statusMeta.className,
+          )}
+          aria-live="polite"
+        >
+          {statusMeta.label}
+        </span>
+
         <LanguageSelect
           value={room?.language ?? 'javascript'}
           disabled={!isOwner || savingRoom}

@@ -12,10 +12,11 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { usePreferences } from '../../context/PreferencesContext.jsx';
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard.js';
 import { useSocket } from '../../hooks/useSocket.js';
+import { useYjsRoom } from '../../hooks/useYjsRoom.js';
 import { extractApiError } from '../../utils/apiError.js';
 
 const DEFAULT_CODE = `// Welcome to your collaborative room.
-// Realtime sync arrives in Step 33. For now, this editor uses local state.
+// Start typing to sync this document with everyone in the room.
 
 console.log('Hello from CodeNest!');
 `;
@@ -143,6 +144,7 @@ export function EditorPage() {
   const { user } = useAuth();
   const { updatePref, prefs } = usePreferences();
   const { socket } = useSocket();
+  const { ytext, awareness, status } = useYjsRoom(roomId);
   const [, copyToClipboard] = useCopyToClipboard();
   const monacoBindingRefs = useRef({ editor: null, monaco: null });
 
@@ -155,6 +157,35 @@ export function EditorPage() {
   const [retryToken, setRetryToken] = useState(0);
 
   const isOwner = useMemo(() => isOwnedByUser(room, user), [room, user]);
+
+  useEffect(() => {
+    if (!socket || !roomId) return undefined;
+
+    socket.emit('room:join', { roomId });
+
+    function handleLanguageChange(payload = {}) {
+      if (payload.roomId !== roomId || !payload.language) return;
+
+      setRoom((currentRoom) => {
+        if (!currentRoom) return currentRoom;
+        return { ...currentRoom, language: payload.language };
+      });
+
+      const { editor, monaco } = monacoBindingRefs.current;
+      const model = editor?.getModel();
+
+      if (monaco && model) {
+        monaco.editor.setModelLanguage(model, payload.language);
+      }
+    }
+
+    socket.on('room:languageChange', handleLanguageChange);
+
+    return () => {
+      socket.off('room:languageChange', handleLanguageChange);
+      socket.emit('room:leave', { roomId });
+    };
+  }, [roomId, socket]);
 
   useEffect(() => {
     if (!roomId) return undefined;
@@ -285,6 +316,7 @@ export function EditorPage() {
           room={room}
           isOwner={isOwner}
           savingRoom={savingRoom}
+          status={status}
           onRename={handleRename}
           onLanguageChange={handleLanguageChange}
           onThemeToggle={handleThemeToggle}
@@ -302,6 +334,8 @@ export function EditorPage() {
             <MonacoPane
               language={room.language}
               value={code}
+              ytext={ytext}
+              awareness={awareness}
               onChange={setCode}
               onMount={handleMount}
             />
