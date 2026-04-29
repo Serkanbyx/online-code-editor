@@ -5,6 +5,17 @@ import { MonacoBinding } from 'y-monaco';
 import { usePreferences } from '../../context/PreferencesContext.jsx';
 import { EDITOR_DEFAULT_OPTIONS } from '../../utils/constants.js';
 
+function setAwarenessCursor(awareness, editor) {
+  const position = editor?.getPosition();
+
+  if (!awareness || !position) return;
+
+  awareness.setLocalStateField('cursor', {
+    lineNumber: position.lineNumber,
+    column: position.column,
+  });
+}
+
 export const MonacoPane = forwardRef(function MonacoPane(
   { language, value, onChange, onMount, ytext, awareness },
   ref,
@@ -76,6 +87,21 @@ export const MonacoPane = forwardRef(function MonacoPane(
 
     return destroyBinding;
   }, [awareness, editorReady, ytext]);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+
+    if (!editorReady || !editor || !awareness) {
+      return undefined;
+    }
+
+    setAwarenessCursor(awareness, editor);
+    const disposable = editor.onDidChangeCursorPosition(() => {
+      setAwarenessCursor(awareness, editor);
+    });
+
+    return () => disposable.dispose();
+  }, [awareness, editorReady]);
 
   return (
     <Editor

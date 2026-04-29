@@ -8,11 +8,13 @@ import EmptyState from '../../components/common/EmptyState.jsx';
 import Skeleton from '../../components/common/Skeleton.jsx';
 import EditorToolbar from '../../components/editor/EditorToolbar.jsx';
 import MonacoPane from '../../components/editor/MonacoPane.jsx';
+import UserListSidebar from '../../components/editor/UserListSidebar.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { usePreferences } from '../../context/PreferencesContext.jsx';
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard.js';
 import { useSocket } from '../../hooks/useSocket.js';
 import { useYjsRoom } from '../../hooks/useYjsRoom.js';
+import { createAwarenessUser } from '../../utils/awareness.js';
 import { extractApiError } from '../../utils/apiError.js';
 
 const DEFAULT_CODE = `// Welcome to your collaborative room.
@@ -40,8 +42,39 @@ function isOwnedByUser(room, user) {
   return Boolean(ownerId && user?._id && String(ownerId) === String(user._id));
 }
 
-function getDisplayName(user) {
-  return user?.displayName || user?.username || 'Unknown user';
+function isValidHexColor(color) {
+  return /^#[\da-f]{6}$/i.test(color);
+}
+
+function hexToRgba(color, alpha) {
+  if (!isValidHexColor(color)) return `rgba(99, 102, 241, ${alpha})`;
+
+  const red = Number.parseInt(color.slice(1, 3), 16);
+  const green = Number.parseInt(color.slice(3, 5), 16);
+  const blue = Number.parseInt(color.slice(5, 7), 16);
+
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function buildRemoteCursorStyles(awareness) {
+  if (!awareness) return '';
+
+  return Array.from(awareness.getStates(), ([clientId, state]) => {
+    const color = state?.user?.color;
+
+    if (!isValidHexColor(color)) return '';
+
+    return `
+.yRemoteSelection-${clientId} {
+  background-color: ${hexToRgba(color, 0.22)} !important;
+}
+
+.yRemoteSelectionHead-${clientId} {
+  border-color: ${color} !important;
+  border-left-color: ${color} !important;
+}
+`;
+  }).join('\n');
 }
 
 function EditorShellSkeleton() {
@@ -79,50 +112,6 @@ function MobileTabSwitcher({ activeTab, onChange }) {
         </button>
       ))}
     </div>
-  );
-}
-
-function UsersSidebar({ room }) {
-  const participants = Array.isArray(room?.participants) ? room.participants : [];
-
-  return (
-    <aside className="flex h-full flex-col overflow-hidden rounded-2xl border border-fg/10 bg-bg/70 md:rounded-none md:border-0 md:border-l md:border-fg/10">
-      <div className="border-b border-fg/10 px-4 py-3">
-        <h2 className="text-sm font-semibold text-fg">Users</h2>
-        <p className="text-xs text-muted">{participants.length} participants</p>
-      </div>
-      <div className="flex-1 overflow-auto p-3">
-        {participants.length > 0 ? (
-          <ul className="flex flex-col gap-2">
-            {participants.map((participant) => {
-              const participantId = participant?._id ?? participant;
-              return (
-                <li
-                  key={participantId}
-                  className="flex items-center gap-3 rounded-xl border border-fg/10 bg-fg/5 px-3 py-2"
-                >
-                  <span className="grid h-8 w-8 place-items-center rounded-full bg-accent/10 text-xs font-semibold uppercase text-accent">
-                    {getDisplayName(participant).charAt(0)}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium text-fg">
-                      {getDisplayName(participant)}
-                    </span>
-                    {participant?.username ? (
-                      <span className="block truncate text-xs text-muted">@{participant.username}</span>
-                    ) : null}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="rounded-xl border border-dashed border-fg/15 p-4 text-sm text-muted">
-            No participants are listed yet.
-          </p>
-        )}
-      </div>
-    </aside>
   );
 }
 
@@ -214,6 +203,36 @@ export function EditorPage() {
       cancelled = true;
     };
   }, [roomId, retryToken]);
+
+  useEffect(() => {
+    if (!awareness || !user) return undefined;
+
+    awareness.setLocalStateField('user', createAwarenessUser(user));
+
+    return () => {
+      awareness.setLocalState(null);
+    };
+  }, [awareness, user]);
+
+  useEffect(() => {
+    if (!awareness || typeof document === 'undefined') return undefined;
+
+    const styleElement = document.createElement('style');
+    styleElement.dataset.codenestRemoteCursors = roomId ?? '';
+    document.head.append(styleElement);
+
+    function syncRemoteCursorStyles() {
+      styleElement.textContent = buildRemoteCursorStyles(awareness);
+    }
+
+    syncRemoteCursorStyles();
+    awareness.on('change', syncRemoteCursorStyles);
+
+    return () => {
+      awareness.off('change', syncRemoteCursorStyles);
+      styleElement.remove();
+    };
+  }, [awareness, roomId]);
 
   const updateRoom = useCallback(
     async (updates, successMessage) => {
@@ -341,7 +360,7 @@ export function EditorPage() {
             />
           </main>
           <div className={clsx('h-full min-h-0 md:row-span-2 md:block', activeTab !== 'users' && 'hidden')}>
-            <UsersSidebar room={room} />
+            <UserListSidebar awareness={awareness} animations={prefs.animations !== false} />
           </div>
           <div className={clsx('h-full min-h-0 md:block', activeTab !== 'output' && 'hidden')}>
             <OutputPanel />

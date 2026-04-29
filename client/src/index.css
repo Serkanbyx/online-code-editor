@@ -76,3 +76,17 @@ select {
   animation: none !important;
   transition: none !important;
 }
+
+@keyframes presence-wave {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 35%, transparent);
+  }
+
+  100% {
+    box-shadow: 0 0 0 14px color-mix(in srgb, var(--color-accent) 0%, transparent);
+  }
+}
+
+.presence-wave {
+  animation: presence-wave 1.2s ease-out;
+}
