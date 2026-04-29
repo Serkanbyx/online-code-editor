@@ -15,23 +15,8 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { usePreferences } from '../../context/PreferencesContext.jsx';
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard.js';
 import { extractApiError } from '../../utils/apiError.js';
+import { EDITOR_VIEWER_OPTIONS } from '../../utils/constants.js';
 import { formatAbsoluteDate, formatRelativeDate } from '../../utils/formatDate.js';
-
-// Editor viewer hardening — `readOnly` blocks programmatic edits; `domReadOnly`
-// removes the contenteditable bypass; `contextmenu: false` hides the paste menu
-// entirely. Together they make the snippet truly immutable from this page.
-const VIEWER_EDITOR_OPTIONS = Object.freeze({
-  readOnly: true,
-  domReadOnly: true,
-  contextmenu: false,
-  automaticLayout: true,
-  scrollBeyondLastLine: false,
-  smoothScrolling: true,
-  renderWhitespace: 'selection',
-  bracketPairColorization: { enabled: true },
-  guides: { bracketPairs: true, indentation: true },
-  padding: { top: 12, bottom: 12 },
-});
 
 function CopyIcon() {
   return (
@@ -223,7 +208,7 @@ export function SnippetDetailPage() {
   const editorOptions = useMemo(
     () => ({
       ...monacoOptions,
-      ...VIEWER_EDITOR_OPTIONS,
+      ...EDITOR_VIEWER_OPTIONS,
     }),
     [monacoOptions],
   );
