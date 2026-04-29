@@ -3,11 +3,13 @@ import { Link, useParams } from 'react-router-dom';
 import clsx from 'clsx';
 import toast from 'react-hot-toast';
 
+import codeService from '../../api/codeService.js';
 import roomService from '../../api/roomService.js';
 import EmptyState from '../../components/common/EmptyState.jsx';
 import Skeleton from '../../components/common/Skeleton.jsx';
 import EditorToolbar from '../../components/editor/EditorToolbar.jsx';
 import MonacoPane from '../../components/editor/MonacoPane.jsx';
+import OutputPanel from '../../components/editor/OutputPanel.jsx';
 import UserListSidebar from '../../components/editor/UserListSidebar.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { usePreferences } from '../../context/PreferencesContext.jsx';
@@ -28,6 +30,18 @@ const MOBILE_TABS = [
   { id: 'output', label: 'Output' },
   { id: 'users', label: 'Users' },
 ];
+
+const RUN_THROTTLE_MS = 2000;
+const STDIN_MAX_LENGTH = 8 * 1024;
+
+const DEFAULT_OUTPUT_STATE = {
+  stdout: '',
+  stderr: '',
+  code: null,
+  signal: null,
+  version: null,
+  stdin: '',
+};
 
 function getRoomId(room) {
   return room?.roomId ?? room?.id ?? room?._id;
@@ -77,6 +91,28 @@ function buildRemoteCursorStyles(awareness) {
   }).join('\n');
 }
 
+function compareRuntimeVersions(leftVersion = '', rightVersion = '') {
+  const leftParts = leftVersion.split(/[.+-]/).map((part) => Number.parseInt(part, 10) || 0);
+  const rightParts = rightVersion.split(/[.+-]/).map((part) => Number.parseInt(part, 10) || 0);
+  const maxLength = Math.max(leftParts.length, rightParts.length);
+
+  for (let index = 0; index < maxLength; index += 1) {
+    const difference = leftParts[index] - rightParts[index];
+
+    if (difference !== 0) return difference;
+  }
+
+  return 0;
+}
+
+function getLatestRuntime(runtimes, language) {
+  if (!language) return null;
+
+  return runtimes
+    .filter((runtime) => runtime.language === language)
+    .sort((left, right) => compareRuntimeVersions(right.version, left.version))[0] ?? null;
+}
+
 function EditorShellSkeleton() {
   return (
     <div className="overflow-hidden rounded-2xl border border-fg/10 bg-bg/70">
@@ -115,19 +151,6 @@ function MobileTabSwitcher({ activeTab, onChange }) {
   );
 }
 
-function OutputPanel() {
-  return (
-    <section className="flex h-full flex-col overflow-hidden rounded-2xl border border-fg/10 bg-slate-950 text-slate-100 md:rounded-none md:border-0 md:border-t md:border-fg/10">
-      <div className="border-b border-white/10 px-4 py-2">
-        <h2 className="text-sm font-semibold">Output</h2>
-      </div>
-      <pre className="flex-1 overflow-auto p-4 text-sm text-slate-300">
-        Run output will appear here in Step 35.
-      </pre>
-    </section>
-  );
-}
-
 export function EditorPage() {
   const { roomId } = useParams();
   const { user } = useAuth();
@@ -136,16 +159,26 @@ export function EditorPage() {
   const { ytext, awareness, status } = useYjsRoom(roomId);
   const [, copyToClipboard] = useCopyToClipboard();
   const monacoBindingRefs = useRef({ editor: null, monaco: null });
+  const runtimeCatalogRef = useRef(null);
+  const lastRunClickRef = useRef(0);
 
   const [room, setRoom] = useState(null);
   const [code, setCode] = useState(DEFAULT_CODE);
+  const [outputState, setOutputState] = useState(DEFAULT_OUTPUT_STATE);
+  const [runtimeCatalog, setRuntimeCatalog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [savingRoom, setSavingRoom] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
   const [activeTab, setActiveTab] = useState('code');
   const [retryToken, setRetryToken] = useState(0);
 
   const isOwner = useMemo(() => isOwnedByUser(room, user), [room, user]);
+  const currentRuntime = useMemo(
+    () => getLatestRuntime(runtimeCatalog, room?.language),
+    [room?.language, runtimeCatalog],
+  );
+  const displayedRuntimeVersion = outputState.version ?? currentRuntime?.version ?? null;
 
   useEffect(() => {
     if (!socket || !roomId) return undefined;
@@ -175,6 +208,31 @@ export function EditorPage() {
       socket.emit('room:leave', { roomId });
     };
   }, [roomId, socket]);
+
+  useEffect(() => {
+    if (runtimeCatalogRef.current) return undefined;
+
+    let cancelled = false;
+
+    codeService
+      .runtimes()
+      .then((data) => {
+        if (cancelled) return;
+        const runtimes = Array.isArray(data?.runtimes) ? data.runtimes : [];
+        runtimeCatalogRef.current = runtimes;
+        setRuntimeCatalog(runtimes);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          runtimeCatalogRef.current = [];
+          setRuntimeCatalog([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!roomId) return undefined;
@@ -298,6 +356,61 @@ export function EditorPage() {
     monacoBindingRefs.current = { editor, monaco };
   }, []);
 
+  const handleStdinChange = useCallback((nextStdin) => {
+    setOutputState((currentOutput) => ({
+      ...currentOutput,
+      stdin: nextStdin.slice(0, STDIN_MAX_LENGTH),
+    }));
+  }, []);
+
+  const handleClearOutput = useCallback(() => {
+    setOutputState((currentOutput) => ({
+      ...DEFAULT_OUTPUT_STATE,
+      stdin: currentOutput.stdin,
+    }));
+  }, []);
+
+  const handleRun = useCallback(async () => {
+    const now = Date.now();
+
+    if (isRunning || now - lastRunClickRef.current < RUN_THROTTLE_MS) return;
+
+    lastRunClickRef.current = now;
+    setIsRunning(true);
+    setActiveTab('output');
+
+    try {
+      const result = await codeService.run({
+        language: room.language,
+        code: ytext?.toString() ?? code,
+        stdin: outputState.stdin,
+      });
+
+      setOutputState((currentOutput) => ({
+        ...currentOutput,
+        stdout: result?.stdout ?? '',
+        stderr: result?.stderr ?? '',
+        code: result?.code ?? null,
+        signal: result?.signal ?? null,
+        version: result?.version ?? currentRuntime?.version ?? null,
+      }));
+    } catch (apiError) {
+      const normalized = extractApiError(apiError, 'Could not run this code.');
+
+      setOutputState((currentOutput) => ({
+        ...currentOutput,
+        stdout: '',
+        stderr: normalized.message,
+        code: null,
+        signal: null,
+        version: currentRuntime?.version ?? currentOutput.version,
+      }));
+      toast.error('Run failed');
+    } finally {
+      setIsRunning(false);
+    }
+  }, [code, currentRuntime?.version, isRunning, outputState.stdin, room.language, ytext]);
+
   if (loading) {
     return <EditorShellSkeleton />;
   }
@@ -335,13 +448,14 @@ export function EditorPage() {
           room={room}
           isOwner={isOwner}
           savingRoom={savingRoom}
+          isRunning={isRunning}
           status={status}
           onRename={handleRename}
           onLanguageChange={handleLanguageChange}
           onThemeToggle={handleThemeToggle}
           onShare={handleShare}
           onSave={() => toast('Save snippet arrives in Step 36.')}
-          onRun={() => toast('Run support arrives in Step 35.')}
+          onRun={handleRun}
         />
 
         <div className="p-3 md:hidden">
@@ -363,7 +477,13 @@ export function EditorPage() {
             <UserListSidebar awareness={awareness} animations={prefs.animations !== false} />
           </div>
           <div className={clsx('h-full min-h-0 md:block', activeTab !== 'output' && 'hidden')}>
-            <OutputPanel />
+            <OutputPanel
+              output={outputState}
+              runtimeLanguage={room.language}
+              runtimeVersion={displayedRuntimeVersion}
+              onClear={handleClearOutput}
+              onStdinChange={handleStdinChange}
+            />
           </div>
         </div>
       </div>

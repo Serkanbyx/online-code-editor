@@ -22,6 +22,7 @@ export function EditorToolbar({
   room,
   isOwner,
   savingRoom,
+  isRunning = false,
   status = 'disconnected',
   onRename,
   onLanguageChange,
@@ -118,9 +119,11 @@ export function EditorToolbar({
         <button
           type="button"
           onClick={onRun}
-          className="h-9 rounded-md bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-accent/90"
+          disabled={isRunning}
+          className="h-9 rounded-md bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-70"
+          aria-live="polite"
         >
-          Run
+          {isRunning ? 'Running...' : 'Run'}
         </button>
       </div>
     </header>
