@@ -5,11 +5,13 @@ import toast from 'react-hot-toast';
 
 import codeService from '../../api/codeService.js';
 import roomService from '../../api/roomService.js';
+import snippetService from '../../api/snippetService.js';
 import EmptyState from '../../components/common/EmptyState.jsx';
 import Skeleton from '../../components/common/Skeleton.jsx';
 import EditorToolbar from '../../components/editor/EditorToolbar.jsx';
 import MonacoPane from '../../components/editor/MonacoPane.jsx';
 import OutputPanel from '../../components/editor/OutputPanel.jsx';
+import SaveSnippetModal from '../../components/editor/SaveSnippetModal.jsx';
 import UserListSidebar from '../../components/editor/UserListSidebar.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { usePreferences } from '../../context/PreferencesContext.jsx';
@@ -169,6 +171,10 @@ export function EditorPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [savingRoom, setSavingRoom] = useState(false);
+  const [savingSnippet, setSavingSnippet] = useState(false);
+  const [addingParticipant, setAddingParticipant] = useState(false);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [snippetId, setSnippetId] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
   const [activeTab, setActiveTab] = useState('code');
   const [retryToken, setRetryToken] = useState(0);
@@ -352,6 +358,65 @@ export function EditorPage() {
     }
   }, [copyToClipboard]);
 
+  const handleSaveSnippet = useCallback(
+    async (metadata) => {
+      if (savingSnippet) return;
+
+      const currentRoomId = getRoomId(room) ?? roomId;
+      const currentCode = ytext?.toString() ?? code;
+      const payload = {
+        ...metadata,
+        language: room.language,
+        code: currentCode,
+      };
+
+      setSavingSnippet(true);
+      try {
+        if (snippetId) {
+          await snippetService.update(snippetId, payload);
+        } else {
+          const data = await snippetService.create({
+            ...payload,
+            roomId: currentRoomId,
+          });
+          const nextSnippetId = data?.snippet?._id ?? data?.snippet?.id ?? null;
+          if (nextSnippetId) setSnippetId(nextSnippetId);
+        }
+
+        toast.success('Saved!');
+        setSaveModalOpen(false);
+      } catch (apiError) {
+        const normalized = extractApiError(apiError, 'Could not save this snippet.');
+        toast.error(normalized.message);
+      } finally {
+        setSavingSnippet(false);
+      }
+    },
+    [code, room, roomId, savingSnippet, snippetId, ytext],
+  );
+
+  const handleAddParticipant = useCallback(
+    async (username) => {
+      const currentRoomId = getRoomId(room) ?? roomId;
+      if (!isOwner || !currentRoomId || addingParticipant) return false;
+
+      setAddingParticipant(true);
+      try {
+        const data = await roomService.addParticipant(currentRoomId, username);
+        if (data?.room) setRoom(data.room);
+        toast.success('Participant added');
+        return true;
+      } catch (apiError) {
+        const normalized = extractApiError(apiError, 'Could not add this participant.');
+        toast.error(normalized.message);
+        return false;
+      } finally {
+        setAddingParticipant(false);
+      }
+    },
+    [addingParticipant, isOwner, room, roomId],
+  );
+
   const handleMount = useCallback((editor, monaco) => {
     monacoBindingRefs.current = { editor, monaco };
   }, []);
@@ -409,7 +474,7 @@ export function EditorPage() {
     } finally {
       setIsRunning(false);
     }
-  }, [code, currentRuntime?.version, isRunning, outputState.stdin, room.language, ytext]);
+  }, [code, currentRuntime?.version, isRunning, outputState.stdin, room?.language, ytext]);
 
   if (loading) {
     return <EditorShellSkeleton />;
@@ -454,7 +519,7 @@ export function EditorPage() {
           onLanguageChange={handleLanguageChange}
           onThemeToggle={handleThemeToggle}
           onShare={handleShare}
-          onSave={() => toast('Save snippet arrives in Step 36.')}
+          onSave={() => setSaveModalOpen(true)}
           onRun={handleRun}
         />
 
@@ -474,7 +539,13 @@ export function EditorPage() {
             />
           </main>
           <div className={clsx('h-full min-h-0 md:row-span-2 md:block', activeTab !== 'users' && 'hidden')}>
-            <UserListSidebar awareness={awareness} animations={prefs.animations !== false} />
+            <UserListSidebar
+              awareness={awareness}
+              animations={prefs.animations !== false}
+              isOwner={isOwner}
+              addingParticipant={addingParticipant}
+              onAddParticipant={handleAddParticipant}
+            />
           </div>
           <div className={clsx('h-full min-h-0 md:block', activeTab !== 'output' && 'hidden')}>
             <OutputPanel
@@ -492,6 +563,14 @@ export function EditorPage() {
         Room ID: <span className="font-mono">{getRoomId(room) ?? roomId}</span>
         {!isOwner ? ' · Owner-only controls are read-only for this account.' : null}
       </p>
+
+      <SaveSnippetModal
+        open={saveModalOpen}
+        roomName={room.name}
+        saving={savingSnippet}
+        onClose={() => setSaveModalOpen(false)}
+        onSubmit={handleSaveSnippet}
+      />
     </div>
   );
 }

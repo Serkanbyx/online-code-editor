@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 
 import Room from '../models/Room.js';
+import User from '../models/User.js';
 import ApiError from '../utils/ApiError.js';
 import * as yjsServer from '../sockets/yjsServer.js';
 
@@ -109,6 +110,10 @@ export async function joinRoom(req, res) {
     throw new ApiError(404, roomNotFoundMessage);
   }
 
+  if (!canViewRoom(room, req.user)) {
+    throw new ApiError(404, roomNotFoundMessage);
+  }
+
   if (!isRoomParticipant(room, req.user)) {
     room.participants.push(req.user._id);
   }
@@ -118,6 +123,30 @@ export async function joinRoom(req, res) {
   await populateRoomParticipants(room);
 
   res.json({ room });
+}
+
+export async function addRoomParticipant(req, res) {
+  const room = await findRoomByRoomId(req.params.roomId);
+
+  if (!room || !isRoomOwner(room, req.user)) {
+    throw new ApiError(404, roomNotFoundMessage);
+  }
+
+  const username = req.body.username.trim().toLowerCase();
+  const participant = await User.findOne({ username });
+
+  if (!participant) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  if (!isRoomParticipant(room, participant)) {
+    room.participants.push(participant._id);
+    room.lastActiveAt = new Date();
+    await room.save();
+  }
+
+  await populateRoomParticipants(room);
+  res.status(201).json({ room });
 }
 
 export async function leaveRoom(req, res) {

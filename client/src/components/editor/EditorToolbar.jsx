@@ -18,6 +18,9 @@ const STATUS_META = {
   },
 };
 
+const SHARE_TOOLTIP =
+  "Anyone with this link who is signed in can join the room. Private rooms also require an invite via 'Add participant' (admin/owner).";
+
 export function EditorToolbar({
   room,
   isOwner,
@@ -105,6 +108,8 @@ export function EditorToolbar({
         <button
           type="button"
           onClick={onShare}
+          title={SHARE_TOOLTIP}
+          aria-label={`Share room. ${SHARE_TOOLTIP}`}
           className="h-9 rounded-md border border-fg/10 px-3 text-sm font-medium text-fg transition-colors hover:border-fg/20 hover:bg-fg/5"
         >
           Share

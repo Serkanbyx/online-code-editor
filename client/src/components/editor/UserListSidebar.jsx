@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 
 import Avatar from '../common/Avatar.jsx';
+import Spinner from '../common/Spinner.jsx';
+
+const USERNAME_PATTERN = /^[a-z0-9_]{3,24}$/;
 
 function getCursorLabel(cursor) {
   if (!cursor?.lineNumber || !cursor?.column) {
@@ -37,9 +40,18 @@ function normalizeAwarenessUsers(awareness) {
   });
 }
 
-export function UserListSidebar({ awareness, animations = true }) {
+export function UserListSidebar({
+  awareness,
+  animations = true,
+  isOwner = false,
+  addingParticipant = false,
+  onAddParticipant,
+}) {
   const [users, setUsers] = useState(() => normalizeAwarenessUsers(awareness));
   const [wavingClientIds, setWavingClientIds] = useState(() => new Set());
+  const [addPopoverOpen, setAddPopoverOpen] = useState(false);
+  const [usernameDraft, setUsernameDraft] = useState('');
+  const [usernameError, setUsernameError] = useState('');
   const previousClientIdsRef = useRef(new Set());
   const waveTimersRef = useRef(new Map());
 
@@ -94,11 +106,78 @@ export function UserListSidebar({ awareness, animations = true }) {
     };
   }, [animations, awareness]);
 
+  async function handleAddParticipant(event) {
+    event.preventDefault();
+    const username = usernameDraft.trim().toLowerCase();
+
+    if (!USERNAME_PATTERN.test(username)) {
+      setUsernameError('Username must be 3-24 lowercase letters, numbers, or underscores.');
+      return;
+    }
+
+    const added = await onAddParticipant?.(username);
+    if (added) {
+      setUsernameDraft('');
+      setUsernameError('');
+      setAddPopoverOpen(false);
+    }
+  }
+
   return (
     <aside className="flex h-full flex-col overflow-hidden rounded-2xl border border-fg/10 bg-bg/70 md:rounded-none md:border-0 md:border-l md:border-fg/10">
       <div className="border-b border-fg/10 px-4 py-3">
-        <h2 className="text-sm font-semibold text-fg">Users</h2>
-        <p className="text-xs text-muted">{users.length} users in room</p>
+        <div className="flex items-start justify-between gap-3">
+          <span>
+            <h2 className="text-sm font-semibold text-fg">Users</h2>
+            <p className="text-xs text-muted">{users.length} users in room</p>
+          </span>
+          {isOwner ? (
+            <button
+              type="button"
+              onClick={() => {
+                setAddPopoverOpen((isOpen) => !isOpen);
+                setUsernameError('');
+              }}
+              className="rounded-md border border-fg/10 px-2.5 py-1.5 text-xs font-medium text-fg transition-colors hover:bg-fg/5"
+              aria-expanded={addPopoverOpen}
+            >
+              Add
+            </button>
+          ) : null}
+        </div>
+
+        {isOwner && addPopoverOpen ? (
+          <form onSubmit={handleAddParticipant} className="mt-3 rounded-xl border border-fg/10 bg-bg p-3 shadow-sm">
+            <label htmlFor="participant-username" className="text-xs font-medium text-fg">
+              Add by username
+            </label>
+            <div className="mt-2 flex gap-2">
+              <input
+                id="participant-username"
+                value={usernameDraft}
+                onChange={(event) => {
+                  setUsernameDraft(event.target.value.toLowerCase());
+                  setUsernameError('');
+                }}
+                disabled={addingParticipant}
+                placeholder="username"
+                className={clsx(
+                  'min-w-0 flex-1 rounded-md border bg-bg px-2 py-1.5 text-sm text-fg outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/30 disabled:cursor-not-allowed disabled:opacity-70',
+                  usernameError ? 'border-danger' : 'border-fg/10',
+                )}
+              />
+              <button
+                type="submit"
+                disabled={addingParticipant}
+                className="inline-flex items-center justify-center gap-1 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {addingParticipant ? <Spinner size="sm" label="Adding participant" className="text-white" /> : null}
+                Add
+              </button>
+            </div>
+            {usernameError ? <p className="mt-2 text-xs text-danger">{usernameError}</p> : null}
+          </form>
+        ) : null}
       </div>
       <div className="flex-1 overflow-auto p-3">
         {users.length > 0 ? (
