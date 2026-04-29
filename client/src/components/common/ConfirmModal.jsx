@@ -17,6 +17,7 @@ export function ConfirmModal({
   onClose,
   title,
   description,
+  children,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   tone = 'default',
@@ -115,6 +116,8 @@ export function ConfirmModal({
             ) : null}
           </div>
         </div>
+
+        {children ? <div className="mt-5">{children}</div> : null}
 
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button
