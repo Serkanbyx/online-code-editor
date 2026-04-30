@@ -76,6 +76,4 @@ await connectDB();
 initSocketServer(httpServer);
 attachYjsToServer(httpServer);
 
-httpServer.listen(env.PORT, () => {
-  console.log(`Server running on port ${env.PORT}`);
-});
+httpServer.listen(env.PORT);

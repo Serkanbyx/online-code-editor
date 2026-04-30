@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import clsx from 'clsx';
+import toast from 'react-hot-toast';
 
 import adminService from '../../api/adminService.js';
 import Avatar from '../../components/common/Avatar.jsx';
@@ -238,7 +239,6 @@ export function AdminCommentsPage() {
     }
     next.delete('page');
     setSearchParams(next, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
   const updateParam = useCallback(

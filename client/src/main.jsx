@@ -7,6 +7,7 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import { PreferencesProvider } from './context/PreferencesContext.jsx';
 import { SocketProvider } from './context/SocketContext.jsx';
 import './index.css';
+import './monacoWorkers.js';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

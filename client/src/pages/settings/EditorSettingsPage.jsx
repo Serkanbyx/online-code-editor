@@ -16,7 +16,7 @@ const SAMPLE_CODE = `function formatSnippetTitle(title) {
 }
 
 const message = 'Tabs, spaces, wrapping, and font choices update instantly.';
-console.log(formatSnippetTitle(message));`;
+formatSnippetTitle(message);`;
 
 const EDITOR_THEME_OPTIONS = [
   { label: 'Visual Studio', value: 'vs' },

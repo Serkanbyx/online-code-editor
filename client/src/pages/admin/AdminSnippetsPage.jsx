@@ -246,7 +246,6 @@ export function AdminSnippetsPage() {
     }
     next.delete('page');
     setSearchParams(next, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
   const updateParam = useCallback(

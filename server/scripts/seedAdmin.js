@@ -47,10 +47,6 @@ async function seedAdmin() {
       role: 'admin',
     });
   }
-
-  console.log('Admin seed complete');
-  console.log(`Email: ${admin.email}`);
-  console.log(`Role: ${admin.role}`);
 }
 
 try {

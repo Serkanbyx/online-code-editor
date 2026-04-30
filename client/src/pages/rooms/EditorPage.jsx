@@ -24,7 +24,8 @@ import { showErrorToast, showSuccessToast } from '../../utils/helpers.js';
 const DEFAULT_CODE = `// Welcome to your collaborative room.
 // Start typing to sync this document with everyone in the room.
 
-console.log('Hello from CodeNest!');
+const greeting = 'Hello from CodeNest!';
+greeting;
 `;
 
 const MOBILE_TABS = [

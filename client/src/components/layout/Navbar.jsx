@@ -150,7 +150,6 @@ export function Navbar() {
 
     const target = trimmed ? `/?q=${encodeURIComponent(trimmed)}` : '/';
     navigate(target, { replace: location.pathname === '/' });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
   useEffect(() => {

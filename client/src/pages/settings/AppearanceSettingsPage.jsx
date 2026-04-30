@@ -102,7 +102,7 @@ function PreviewCard() {
           <input
             type="text"
             readOnly
-            value="console.log('Hello CodeNest')"
+            value="const greeting = 'Hello CodeNest';"
             className="rounded-md border border-fg/10 bg-bg px-3 py-2 text-sm text-fg shadow-sm focus:outline-none"
           />
         </label>
