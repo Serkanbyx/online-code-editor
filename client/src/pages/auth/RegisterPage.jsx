@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
 
 import { useAuth } from '../../context/AuthContext.jsx';
 import AuthCard from '../../components/auth/AuthCard.jsx';
@@ -12,6 +11,7 @@ import FormField from '../../components/common/FormField.jsx';
 import FormError from '../../components/common/FormError.jsx';
 import Spinner from '../../components/common/Spinner.jsx';
 import extractApiError from '../../utils/apiError.js';
+import { showSuccessToast } from '../../utils/helpers.js';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_PATTERN = /^[a-z0-9_]{3,24}$/;
@@ -108,7 +108,7 @@ export function RegisterPage() {
         email: form.email.trim().toLowerCase(),
         password: form.password,
       });
-      toast.success(`Welcome to CodeNest, ${user?.displayName ?? user?.username ?? ''}!`.trim());
+      showSuccessToast(`Welcome to CodeNest, ${user?.displayName ?? user?.username ?? ''}!`.trim());
       navigate('/', { replace: true });
     } catch (error) {
       const normalized = extractApiError(

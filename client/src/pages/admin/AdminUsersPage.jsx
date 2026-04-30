@@ -1,6 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
 import clsx from 'clsx';
 
 import adminService from '../../api/adminService.js';
@@ -8,12 +7,15 @@ import Avatar from '../../components/common/Avatar.jsx';
 import ConfirmModal from '../../components/common/ConfirmModal.jsx';
 import EmptyState from '../../components/common/EmptyState.jsx';
 import FormError from '../../components/common/FormError.jsx';
+import RoleBadge from '../../components/common/RoleBadge.jsx';
 import Skeleton from '../../components/common/Skeleton.jsx';
 import Spinner from '../../components/common/Spinner.jsx';
+import StatusBadge from '../../components/common/StatusBadge.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import useDebounce from '../../hooks/useDebounce.js';
 import { extractApiError } from '../../utils/apiError.js';
 import { formatAbsoluteDate, formatRelativeDate } from '../../utils/formatDate.js';
+import { showSuccessToast } from '../../utils/helpers.js';
 
 const PAGE_SIZE = 12;
 const ROLE_OPTIONS = [
@@ -46,36 +48,6 @@ function formatNumber(value) {
 
 function getUserLabel(user) {
   return user?.displayName || user?.username || user?.email || 'this user';
-}
-
-function RoleBadge({ role }) {
-  const isAdmin = role === 'admin';
-
-  return (
-    <span
-      className={clsx(
-        'inline-flex rounded-full px-2 py-1 text-xs font-semibold capitalize',
-        isAdmin ? 'bg-accent/10 text-accent' : 'bg-fg/5 text-muted',
-      )}
-    >
-      {role || 'user'}
-    </span>
-  );
-}
-
-function StatusBadge({ status }) {
-  const isBanned = status === 'banned';
-
-  return (
-    <span
-      className={clsx(
-        'inline-flex rounded-full px-2 py-1 text-xs font-semibold',
-        isBanned ? 'bg-danger/10 text-danger' : 'bg-success/10 text-success',
-      )}
-    >
-      {isBanned ? 'Banned' : 'Active'}
-    </span>
-  );
 }
 
 function Segmented({ label, options, value, onChange }) {
@@ -463,7 +435,7 @@ export function AdminUsersPage() {
     try {
       const data = await adminService.updateUserRole(modal.user._id, { role: selectedRole });
       refreshUser(data.user);
-      toast.success('User role updated.');
+      showSuccessToast('User role updated.');
       closeModal();
     } catch (apiError) {
       const normalized = extractApiError(apiError, 'Could not update user role.');
@@ -496,7 +468,7 @@ export function AdminUsersPage() {
         reason: shouldBan ? reason : undefined,
       });
       refreshUser(data.user);
-      toast.success(shouldBan ? 'User banned.' : 'User unbanned.');
+      showSuccessToast(shouldBan ? 'User banned.' : 'User unbanned.');
       closeModal();
     } catch (apiError) {
       const normalized = extractApiError(apiError, 'Could not update ban status.');
@@ -516,7 +488,7 @@ export function AdminUsersPage() {
       setUsers((previous) => previous.filter((item) => item._id !== modal.user._id));
       setTotal((previous) => Math.max(0, previous - 1));
       setExpandedUserId((current) => (current === modal.user._id ? null : current));
-      toast.success('User deleted.');
+      showSuccessToast('User deleted.');
       closeModal();
     } catch (apiError) {
       const normalized = extractApiError(apiError, 'Could not delete user.');

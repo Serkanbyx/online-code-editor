@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import clsx from 'clsx';
-import toast from 'react-hot-toast';
 
 import Avatar from '../../components/common/Avatar.jsx';
 import EmptyState from '../../components/common/EmptyState.jsx';
@@ -17,6 +16,7 @@ import { useCopyToClipboard } from '../../hooks/useCopyToClipboard.js';
 import { extractApiError } from '../../utils/apiError.js';
 import { EDITOR_VIEWER_OPTIONS } from '../../utils/constants.js';
 import { formatAbsoluteDate, formatRelativeDate } from '../../utils/formatDate.js';
+import { showErrorToast, showSuccessToast } from '../../utils/helpers.js';
 
 function CopyIcon() {
   return (
@@ -217,22 +217,22 @@ export function SnippetDetailPage() {
     if (!detailUrl) return;
     const success = await copyToClipboard(detailUrl);
     if (success) {
-      toast.success('Link copied');
+      showSuccessToast('Link copied');
     } else {
-      toast.error('Could not copy link');
+      showErrorToast('Could not copy link');
     }
   }, [copyToClipboard, detailUrl]);
 
   const handleCopyCode = useCallback(async () => {
     if (!snippet?.code) {
-      toast.error('Nothing to copy');
+      showErrorToast('Nothing to copy');
       return;
     }
     const success = await copyToClipboard(snippet.code);
     if (success) {
-      toast.success('Code copied');
+      showSuccessToast('Code copied');
     } else {
-      toast.error('Could not copy code');
+      showErrorToast('Could not copy code');
     }
   }, [copyToClipboard, snippet?.code]);
 
@@ -263,7 +263,7 @@ export function SnippetDetailPage() {
       setLiked(previousLiked);
       setSnippet((current) => (current ? { ...current, likesCount: previousCount } : current));
       const normalized = extractApiError(apiError, 'Could not update like.');
-      toast.error(normalized.message);
+      showErrorToast(normalized.message);
     } finally {
       setLikeBusy(false);
     }
@@ -284,11 +284,11 @@ export function SnippetDetailPage() {
       if (!newId) {
         throw new Error('Fork response missing snippet id');
       }
-      toast.success('Forked! Now editing your copy');
+      showSuccessToast('Forked! Now editing your copy');
       navigate(`/snippets/${newId}/edit`);
     } catch (apiError) {
       const normalized = extractApiError(apiError, 'Could not fork this snippet.');
-      toast.error(normalized.message);
+      showErrorToast(normalized.message);
     } finally {
       setForking(false);
     }

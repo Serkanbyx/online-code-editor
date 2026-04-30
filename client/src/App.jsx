@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import MainLayout from './layouts/MainLayout.jsx';
 import AdminLayout from './layouts/AdminLayout.jsx';
@@ -37,52 +38,65 @@ import AdminReportsPage from './pages/admin/AdminReportsPage.jsx';
 import NotFoundPage from './pages/misc/NotFoundPage.jsx';
 import ForbiddenPage from './pages/misc/ForbiddenPage.jsx';
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [pathname]);
+
+  return null;
+}
+
 function App() {
   return (
-    <Routes>
-      <Route element={<MainLayout />}>
-        <Route index element={<HomePage />} />
+    <>
+      <ScrollToTop />
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route index element={<HomePage />} />
 
-        <Route element={<GuestOnlyRoute />}>
-          <Route path="login" element={<LoginPage />} />
-          <Route path="register" element={<RegisterPage />} />
+          <Route element={<GuestOnlyRoute />}>
+            <Route path="login" element={<LoginPage />} />
+            <Route path="register" element={<RegisterPage />} />
+          </Route>
+
+          <Route path="snippets/:id" element={<SnippetDetailPage />} />
+          <Route path="u/:username" element={<ProfilePage />} />
+          <Route path="403" element={<ForbiddenPage />} />
+
+          <Route element={<ProtectedRoute />}>
+            <Route path="snippets/:id/edit" element={<EditSnippetPage />} />
+            <Route path="me/snippets" element={<MySnippetsPage />} />
+            <Route path="rooms" element={<RoomsHubPage />} />
+            <Route path="room/:roomId" element={<EditorPage />} />
+
+            <Route path="settings" element={<SettingsLayout />}>
+              <Route index element={<Navigate to="profile" replace />} />
+              <Route path="profile" element={<ProfileSettingsPage />} />
+              <Route path="account" element={<AccountSettingsPage />} />
+              <Route path="appearance" element={<AppearanceSettingsPage />} />
+              <Route path="editor" element={<EditorSettingsPage />} />
+              <Route path="privacy" element={<PrivacySettingsPage />} />
+              <Route path="notifications" element={<NotificationsSettingsPage />} />
+            </Route>
+          </Route>
+
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
 
-        <Route path="snippets/:id" element={<SnippetDetailPage />} />
-        <Route path="u/:username" element={<ProfilePage />} />
-        <Route path="403" element={<ForbiddenPage />} />
-
-        <Route element={<ProtectedRoute />}>
-          <Route path="snippets/:id/edit" element={<EditSnippetPage />} />
-          <Route path="me/snippets" element={<MySnippetsPage />} />
-          <Route path="rooms" element={<RoomsHubPage />} />
-          <Route path="room/:roomId" element={<EditorPage />} />
-
-          <Route path="settings" element={<SettingsLayout />}>
-            <Route index element={<Navigate to="profile" replace />} />
-            <Route path="profile" element={<ProfileSettingsPage />} />
-            <Route path="account" element={<AccountSettingsPage />} />
-            <Route path="appearance" element={<AppearanceSettingsPage />} />
-            <Route path="editor" element={<EditorSettingsPage />} />
-            <Route path="privacy" element={<PrivacySettingsPage />} />
-            <Route path="notifications" element={<NotificationsSettingsPage />} />
+        <Route path="/admin" element={<AdminRoute />}>
+          <Route element={<AdminLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="snippets" element={<AdminSnippetsPage />} />
+            <Route path="comments" element={<AdminCommentsPage />} />
+            <Route path="reports" element={<AdminReportsPage />} />
           </Route>
         </Route>
-
-        <Route path="*" element={<NotFoundPage />} />
-      </Route>
-
-      <Route path="/admin" element={<AdminRoute />}>
-        <Route element={<AdminLayout />}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboardPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="snippets" element={<AdminSnippetsPage />} />
-          <Route path="comments" element={<AdminCommentsPage />} />
-          <Route path="reports" element={<AdminReportsPage />} />
-        </Route>
-      </Route>
-    </Routes>
+      </Routes>
+    </>
   );
 }
 

@@ -1,11 +1,13 @@
 import clsx from 'clsx';
 
+import SelectableCard from '../../components/common/SelectableCard.jsx';
+import ToggleSwitch from '../../components/common/ToggleSwitch.jsx';
 import { usePreferences } from '../../context/PreferencesContext.jsx';
 
 const THEME_OPTIONS = [
-  { label: 'Light', value: 'light' },
-  { label: 'Dark', value: 'dark' },
-  { label: 'System', value: 'system' },
+  { label: 'Light', value: 'light', description: 'Use a bright interface at all times.' },
+  { label: 'Dark', value: 'dark', description: 'Use a low-light interface at all times.' },
+  { label: 'System', value: 'system', description: 'Follow your operating system preference.' },
 ];
 
 const FONT_SIZE_OPTIONS = [
@@ -62,32 +64,22 @@ function SegmentedControl({ label, value, options, onChange }) {
   );
 }
 
-function ToggleSwitch({ label, description, checked, onChange }) {
+function SelectableCardGroup({ label, value, options, onChange }) {
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-fg/10 bg-fg/2 p-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p className="text-sm font-medium text-fg">{label}</p>
-        {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
+    <fieldset className="grid gap-2">
+      <legend className="text-sm font-medium text-fg">{label}</legend>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {options.map((option) => (
+          <SelectableCard
+            key={option.value}
+            selected={option.value === value}
+            onSelect={() => onChange(option.value)}
+            title={option.label}
+            description={option.description}
+          />
+        ))}
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={clsx(
-          'relative h-7 w-12 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent/30',
-          checked ? 'bg-accent' : 'bg-fg/20',
-        )}
-      >
-        <span className="sr-only">{label}</span>
-        <span
-          className={clsx(
-            'absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform',
-            checked ? 'translate-x-6' : 'translate-x-1',
-          )}
-        />
-      </button>
-    </div>
+    </fieldset>
   );
 }
 
@@ -157,7 +149,7 @@ export function AppearanceSettingsPage() {
         description={`System theme currently resolves to ${systemScheme}. Changes save automatically.`}
       >
         <div className="grid gap-5">
-          <SegmentedControl
+          <SelectableCardGroup
             label="Theme"
             value={prefs.theme}
             options={THEME_OPTIONS}

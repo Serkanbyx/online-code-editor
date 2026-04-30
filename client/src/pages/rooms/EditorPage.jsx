@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import clsx from 'clsx';
-import toast from 'react-hot-toast';
 
 import codeService from '../../api/codeService.js';
 import roomService from '../../api/roomService.js';
@@ -20,6 +19,7 @@ import { useSocket } from '../../hooks/useSocket.js';
 import { useYjsRoom } from '../../hooks/useYjsRoom.js';
 import { createAwarenessUser } from '../../utils/awareness.js';
 import { extractApiError } from '../../utils/apiError.js';
+import { showErrorToast, showSuccessToast } from '../../utils/helpers.js';
 
 const DEFAULT_CODE = `// Welcome to your collaborative room.
 // Start typing to sync this document with everyone in the room.
@@ -308,11 +308,11 @@ export function EditorPage() {
         const data = await roomService.update(currentRoomId, updates);
         const nextRoom = data?.room ?? null;
         if (nextRoom) setRoom(nextRoom);
-        if (successMessage) toast.success(successMessage);
+        if (successMessage) showSuccessToast(successMessage);
         return nextRoom;
       } catch (apiError) {
         const normalized = extractApiError(apiError, 'Could not update the room.');
-        toast.error(normalized.message);
+        showErrorToast(normalized.message);
         return null;
       } finally {
         setSavingRoom(false);
@@ -352,9 +352,9 @@ export function EditorPage() {
   const handleShare = useCallback(async () => {
     const success = await copyToClipboard(window.location.href);
     if (success) {
-      toast.success('Link copied');
+      showSuccessToast('Link copied');
     } else {
-      toast.error('Could not copy link');
+      showErrorToast('Could not copy link');
     }
   }, [copyToClipboard]);
 
@@ -383,11 +383,11 @@ export function EditorPage() {
           if (nextSnippetId) setSnippetId(nextSnippetId);
         }
 
-        toast.success('Saved!');
+        showSuccessToast('Saved!');
         setSaveModalOpen(false);
       } catch (apiError) {
         const normalized = extractApiError(apiError, 'Could not save this snippet.');
-        toast.error(normalized.message);
+        showErrorToast(normalized.message);
       } finally {
         setSavingSnippet(false);
       }
@@ -404,11 +404,11 @@ export function EditorPage() {
       try {
         const data = await roomService.addParticipant(currentRoomId, username);
         if (data?.room) setRoom(data.room);
-        toast.success('Participant added');
+        showSuccessToast('Participant added');
         return true;
       } catch (apiError) {
         const normalized = extractApiError(apiError, 'Could not add this participant.');
-        toast.error(normalized.message);
+        showErrorToast(normalized.message);
         return false;
       } finally {
         setAddingParticipant(false);
@@ -470,7 +470,7 @@ export function EditorPage() {
         signal: null,
         version: currentRuntime?.version ?? currentOutput.version,
       }));
-      toast.error('Run failed');
+      showErrorToast('Run failed');
     } finally {
       setIsRunning(false);
     }

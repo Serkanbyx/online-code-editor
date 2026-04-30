@@ -1,5 +1,6 @@
 import axios from 'axios';
-import toast from 'react-hot-toast';
+
+import { dismissToast, showLoadingToast } from '../utils/helpers.js';
 
 const DEFAULT_TIMEOUT_MS = 15000;
 const COLD_START_TIMEOUT_MS = 60000;
@@ -34,7 +35,7 @@ function clearToken() {
 
 function dismissColdStartToast() {
   if (!coldStartToastActive) return;
-  toast.dismiss(COLD_START_TOAST_ID);
+  dismissToast(COLD_START_TOAST_ID);
   coldStartToastActive = false;
 }
 
@@ -52,7 +53,7 @@ api.interceptors.request.use((config) => {
   // (UptimeRobot from STEP 49 handles that warm-up).
   if (lastRequestAt && elapsed > COLD_START_GAP_MS) {
     config.timeout = COLD_START_TIMEOUT_MS;
-    toast.loading('Waking up the server, this may take up to a minute…', {
+    showLoadingToast('Waking up the server, this may take up to a minute...', {
       id: COLD_START_TOAST_ID,
     });
     coldStartToastActive = true;

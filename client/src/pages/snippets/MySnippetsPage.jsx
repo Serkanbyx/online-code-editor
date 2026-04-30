@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
 import clsx from 'clsx';
 
 import ConfirmModal from '../../components/common/ConfirmModal.jsx';
@@ -10,6 +9,7 @@ import Skeleton from '../../components/common/Skeleton.jsx';
 import snippetService from '../../api/snippetService.js';
 import { extractApiError } from '../../utils/apiError.js';
 import { formatAbsoluteDate, formatRelativeDate } from '../../utils/formatDate.js';
+import { showErrorToast, showSuccessToast } from '../../utils/helpers.js';
 
 const PAGE_SIZE = 10;
 const VALID_VISIBILITIES = ['public', 'private', 'forked'];
@@ -262,10 +262,10 @@ export function MySnippetsPage() {
       setItems((previous) => previous.filter((snippet) => getSnippetId(snippet) !== snippetId));
       setTotal((previous) => Math.max(previous - 1, 0));
       setSnippetToDelete(null);
-      toast.success('Snippet deleted');
+      showSuccessToast('Snippet deleted');
     } catch (apiError) {
       const normalized = extractApiError(apiError, 'Could not delete the snippet.');
-      toast.error(normalized.message);
+      showErrorToast(normalized.message);
     } finally {
       setDeleting(false);
     }

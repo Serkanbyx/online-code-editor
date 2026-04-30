@@ -4,7 +4,7 @@ export function CharacterCounter({ current, max, className }) {
   const isOverLimit = current > max;
 
   return (
-    <p
+    <small
       aria-live="polite"
       className={clsx(
         'text-xs',
@@ -13,7 +13,7 @@ export function CharacterCounter({ current, max, className }) {
       )}
     >
       {current}/{max}
-    </p>
+    </small>
   );
 }
 

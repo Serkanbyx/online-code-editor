@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
 
 import { useAuth } from '../../context/AuthContext.jsx';
 import AuthCard from '../../components/auth/AuthCard.jsx';
@@ -9,6 +8,7 @@ import FormField from '../../components/common/FormField.jsx';
 import FormError from '../../components/common/FormError.jsx';
 import Spinner from '../../components/common/Spinner.jsx';
 import extractApiError from '../../utils/apiError.js';
+import { showSuccessToast } from '../../utils/helpers.js';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -65,7 +65,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       const user = await login({ email: email.trim().toLowerCase(), password });
-      toast.success(`Welcome back, ${user?.displayName ?? user?.username ?? ''}!`.trim());
+      showSuccessToast(`Welcome back, ${user?.displayName ?? user?.username ?? ''}!`.trim());
       navigate(nextPath, { replace: true });
     } catch (error) {
       const normalized = extractApiError(error, 'Could not sign you in. Please try again.');

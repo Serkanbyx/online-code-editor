@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
-import toast from 'react-hot-toast';
 
 import Avatar from '../common/Avatar.jsx';
 import commentService from '../../api/commentService.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { extractApiError } from '../../utils/apiError.js';
 import { formatAbsoluteDate, formatRelativeDate } from '../../utils/formatDate.js';
+import { showErrorToast, showSuccessToast } from '../../utils/helpers.js';
 
 const CONTENT_MAX_LENGTH = 1000;
 const REPLIES_PAGE_LIMIT = 20;
@@ -262,7 +262,7 @@ export function CommentItem({
     const data = await commentService.update(comment._id, { content });
     onUpdated?.(data?.comment ?? { ...comment, content });
     setEditing(false);
-    toast.success('Comment updated');
+    showSuccessToast('Comment updated');
   }
 
   async function handleReplySubmit(content) {
@@ -293,7 +293,7 @@ export function CommentItem({
     setRepliesOpen(true);
     setReplyOpen(false);
     onReplyAdded?.(created);
-    toast.success('Reply posted');
+    showSuccessToast('Reply posted');
   }
 
   async function handleDelete() {
@@ -306,10 +306,10 @@ export function CommentItem({
     try {
       await commentService.remove(comment._id);
       onDeleted?.(comment);
-      toast.success('Comment deleted');
+      showSuccessToast('Comment deleted');
     } catch (apiError) {
       const normalized = extractApiError(apiError, 'Could not delete the comment.');
-      toast.error(normalized.message);
+      showErrorToast(normalized.message);
     } finally {
       setDeleting(false);
     }

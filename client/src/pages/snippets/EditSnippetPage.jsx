@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import clsx from 'clsx';
-import toast from 'react-hot-toast';
 
 import codeService from '../../api/codeService.js';
 import snippetService from '../../api/snippetService.js';
@@ -14,6 +13,7 @@ import OutputPanel from '../../components/editor/OutputPanel.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { usePreferences } from '../../context/PreferencesContext.jsx';
 import { extractApiError } from '../../utils/apiError.js';
+import { showErrorToast, showSuccessToast } from '../../utils/helpers.js';
 
 const RUN_THROTTLE_MS = 2000;
 const STDIN_MAX_LENGTH = 8 * 1024;
@@ -151,7 +151,7 @@ export function EditSnippetPage() {
         if (!isSnippetAuthor(nextSnippet, user)) {
           if (!permissionToastShownRef.current) {
             permissionToastShownRef.current = true;
-            toast.error("You don't have permission to edit this snippet");
+            showErrorToast("You don't have permission to edit this snippet");
           }
           navigate(`/snippets/${getSnippetId(nextSnippet) ?? id}`, { replace: true });
           return;
@@ -230,7 +230,7 @@ export function EditSnippetPage() {
         signal: null,
         version: currentRuntime?.version ?? currentOutput.version,
       }));
-      toast.error('Run failed');
+      showErrorToast('Run failed');
     } finally {
       setIsRunning(false);
     }
@@ -254,10 +254,10 @@ export function EditSnippetPage() {
         setLanguage(nextSnippet.language ?? language);
         setCode(nextSnippet.code ?? code);
       }
-      toast.success('Snippet saved');
+      showSuccessToast('Snippet saved');
     } catch (apiError) {
       const normalized = extractApiError(apiError, 'Could not save this snippet.');
-      toast.error(normalized.message);
+      showErrorToast(normalized.message);
     } finally {
       setSaving(false);
     }
@@ -269,11 +269,11 @@ export function EditSnippetPage() {
     setDeleting(true);
     try {
       await snippetService.remove(snippetId);
-      toast.success('Snippet deleted');
+      showSuccessToast('Snippet deleted');
       navigate('/me/snippets', { replace: true });
     } catch (apiError) {
       const normalized = extractApiError(apiError, 'Could not delete this snippet.');
-      toast.error(normalized.message);
+      showErrorToast(normalized.message);
     } finally {
       setDeleting(false);
       setDeleteModalOpen(false);

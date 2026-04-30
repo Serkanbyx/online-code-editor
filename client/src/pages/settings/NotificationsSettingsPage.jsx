@@ -1,5 +1,4 @@
-import clsx from 'clsx';
-
+import ToggleSwitch from '../../components/common/ToggleSwitch.jsx';
 import { usePreferences } from '../../context/PreferencesContext.jsx';
 
 const NOTIFICATION_OPTIONS = [
@@ -38,35 +37,6 @@ function InfoBanner({ children }) {
   );
 }
 
-function Toggle({ label, description, checked, onChange }) {
-  return (
-    <div className="flex flex-col gap-3 rounded-xl border border-fg/10 bg-fg/2 p-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p className="text-sm font-medium text-fg">{label}</p>
-        <p className="mt-1 text-sm text-muted">{description}</p>
-      </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={clsx(
-          'relative h-7 w-12 shrink-0 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent/30',
-          checked ? 'bg-accent' : 'bg-fg/20',
-        )}
-      >
-        <span className="sr-only">{label}</span>
-        <span
-          className={clsx(
-            'absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform',
-            checked ? 'translate-x-6' : 'translate-x-1',
-          )}
-        />
-      </button>
-    </div>
-  );
-}
-
 export function NotificationsSettingsPage() {
   const { prefs, updatePref } = usePreferences();
 
@@ -92,7 +62,7 @@ export function NotificationsSettingsPage() {
       <SettingsCard title="Notification preferences" description="Changes save automatically when you toggle an option.">
         <div className="grid gap-3">
           {NOTIFICATION_OPTIONS.map((option) => (
-            <Toggle
+            <ToggleSwitch
               key={option.key}
               label={option.label}
               description={option.description}

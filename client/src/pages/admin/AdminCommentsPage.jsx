@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
 import clsx from 'clsx';
 
 import adminService from '../../api/adminService.js';
@@ -9,9 +8,11 @@ import ConfirmModal from '../../components/common/ConfirmModal.jsx';
 import EmptyState from '../../components/common/EmptyState.jsx';
 import FormError from '../../components/common/FormError.jsx';
 import Skeleton from '../../components/common/Skeleton.jsx';
+import StatusBadge from '../../components/common/StatusBadge.jsx';
 import useDebounce from '../../hooks/useDebounce.js';
 import { extractApiError } from '../../utils/apiError.js';
 import { formatAbsoluteDate, formatRelativeDate } from '../../utils/formatDate.js';
+import { showErrorToast, showSuccessToast } from '../../utils/helpers.js';
 
 const PAGE_SIZE = 12;
 const STATUS_OPTIONS = [
@@ -40,23 +41,6 @@ function truncateText(value, maxLength = 80) {
 
 function getAuthorLabel(author) {
   return author?.displayName || author?.username || 'Unknown author';
-}
-
-function StatusBadge({ status }) {
-  const normalized = status || 'active';
-
-  return (
-    <span
-      className={clsx(
-        'inline-flex rounded-full px-2 py-1 text-xs font-semibold capitalize',
-        normalized === 'active' && 'bg-success/10 text-success',
-        normalized === 'hidden' && 'bg-accent/10 text-accent',
-        normalized === 'removed' && 'bg-danger/10 text-danger',
-      )}
-    >
-      {normalized}
-    </span>
-  );
 }
 
 function Segmented({ label, options, value, onChange }) {
@@ -351,12 +335,12 @@ export function AdminCommentsPage() {
       if (previousStatus === 'removed' && nextStatus === 'active') {
         toast(RESTORE_REMOVED_WARNING, { icon: '!' });
       } else {
-        toast.success(nextStatus === 'hidden' ? 'Comment hidden.' : 'Comment restored.');
+        showSuccessToast(nextStatus === 'hidden' ? 'Comment hidden.' : 'Comment restored.');
       }
     } catch (apiError) {
       updateCommentStatus(comment._id, previousStatus);
       const normalized = extractApiError(apiError, 'Action failed.');
-      toast.error(normalized.message);
+      showErrorToast(normalized.message);
     }
   }
 
@@ -371,14 +355,14 @@ export function AdminCommentsPage() {
     try {
       const data = await adminService.moderateComment(modal.comment._id, { status: 'removed' });
       if (data?.comment) replaceComment(data.comment);
-      toast.success('Comment removed.');
+      showSuccessToast('Comment removed.');
       setModal(null);
       setModalError('');
     } catch (apiError) {
       updateCommentStatus(modal.comment._id, previousStatus);
       const normalized = extractApiError(apiError, 'Could not remove comment.');
       setModalError(normalized.message);
-      toast.error(normalized.message);
+      showErrorToast(normalized.message);
     } finally {
       setActionLoading(false);
     }

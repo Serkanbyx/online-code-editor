@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
 import clsx from 'clsx';
 
 import adminService from '../../api/adminService.js';
@@ -10,9 +9,11 @@ import EmptyState from '../../components/common/EmptyState.jsx';
 import FormError from '../../components/common/FormError.jsx';
 import LanguageBadge from '../../components/common/LanguageBadge.jsx';
 import Skeleton from '../../components/common/Skeleton.jsx';
+import StatusBadge from '../../components/common/StatusBadge.jsx';
 import useDebounce from '../../hooks/useDebounce.js';
 import { extractApiError } from '../../utils/apiError.js';
 import { formatAbsoluteDate, formatRelativeDate } from '../../utils/formatDate.js';
+import { showErrorToast, showSuccessToast } from '../../utils/helpers.js';
 import { SUPPORTED_LANGUAGES, getLanguageLabel } from '../../utils/languages.js';
 
 const PAGE_SIZE = 12;
@@ -42,23 +43,6 @@ function formatNumber(value) {
 
 function getAuthorLabel(author) {
   return author?.displayName || author?.username || 'Unknown author';
-}
-
-function StatusBadge({ status }) {
-  const normalized = status || 'active';
-
-  return (
-    <span
-      className={clsx(
-        'inline-flex rounded-full px-2 py-1 text-xs font-semibold capitalize',
-        normalized === 'active' && 'bg-success/10 text-success',
-        normalized === 'hidden' && 'bg-accent/10 text-accent',
-        normalized === 'removed' && 'bg-danger/10 text-danger',
-      )}
-    >
-      {normalized}
-    </span>
-  );
 }
 
 function BooleanBadge({ value }) {
@@ -350,11 +334,11 @@ export function AdminSnippetsPage() {
 
     try {
       await adminService.moderateSnippet(snippet._id, { status: nextStatus });
-      toast.success(nextStatus === 'hidden' ? 'Snippet hidden.' : 'Snippet restored.');
+      showSuccessToast(nextStatus === 'hidden' ? 'Snippet hidden.' : 'Snippet restored.');
     } catch (apiError) {
       updateSnippetStatus(snippet._id, previousStatus);
       const normalized = extractApiError(apiError, 'Action failed.');
-      toast.error(normalized.message);
+      showErrorToast(normalized.message);
     }
   }
 
@@ -368,14 +352,14 @@ export function AdminSnippetsPage() {
 
     try {
       await adminService.moderateSnippet(modal.snippet._id, { status: 'removed' });
-      toast.success('Snippet removed.');
+      showSuccessToast('Snippet removed.');
       setModal(null);
       setModalError('');
     } catch (apiError) {
       updateSnippetStatus(modal.snippet._id, previousStatus);
       const normalized = extractApiError(apiError, 'Could not remove snippet.');
       setModalError(normalized.message);
-      toast.error(normalized.message);
+      showErrorToast(normalized.message);
     } finally {
       setActionLoading(false);
     }
@@ -390,7 +374,7 @@ export function AdminSnippetsPage() {
       await adminService.deleteSnippet(modal.snippet._id);
       setSnippets((previous) => previous.filter((snippet) => snippet._id !== modal.snippet._id));
       setTotal((previous) => Math.max(0, previous - 1));
-      toast.success('Snippet permanently deleted.');
+      showSuccessToast('Snippet permanently deleted.');
       setModal(null);
       setModalError('');
     } catch (apiError) {

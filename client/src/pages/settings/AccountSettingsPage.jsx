@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
 
 import authService from '../../api/authService.js';
 import PasswordField from '../../components/auth/PasswordField.jsx';
@@ -10,6 +9,7 @@ import Spinner from '../../components/common/Spinner.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import extractApiError from '../../utils/apiError.js';
 import { formatAbsoluteDate } from '../../utils/formatDate.js';
+import { showSuccessToast } from '../../utils/helpers.js';
 
 const INITIAL_PASSWORD_FORM = {
   currentPassword: '',
@@ -112,7 +112,7 @@ export function AccountSettingsPage() {
         newPassword: passwordForm.newPassword,
       });
       setPasswordForm(INITIAL_PASSWORD_FORM);
-      toast.success('Password changed successfully.');
+      showSuccessToast('Password changed successfully.');
     } catch (apiError) {
       const normalized = extractApiError(apiError, 'Could not change your password.');
       setPasswordMessage(normalized.message);
@@ -140,7 +140,7 @@ export function AccountSettingsPage() {
       await authService.deleteAccount({ password: deleteForm.password });
       auth.logout({ redirect: false });
       navigate('/', { replace: true });
-      toast.success('Your account has been deleted.');
+      showSuccessToast('Your account has been deleted.');
     } catch (apiError) {
       const normalized = extractApiError(apiError, 'Could not delete your account.');
       setDeleteMessage(normalized.message);

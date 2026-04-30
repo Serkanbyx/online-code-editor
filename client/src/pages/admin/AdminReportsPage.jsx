@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
 import clsx from 'clsx';
 
 import adminService from '../../api/adminService.js';
@@ -8,8 +7,10 @@ import Avatar from '../../components/common/Avatar.jsx';
 import EmptyState from '../../components/common/EmptyState.jsx';
 import LanguageBadge from '../../components/common/LanguageBadge.jsx';
 import Skeleton from '../../components/common/Skeleton.jsx';
+import StatusBadge from '../../components/common/StatusBadge.jsx';
 import { extractApiError } from '../../utils/apiError.js';
 import { formatAbsoluteDate, formatRelativeDate } from '../../utils/formatDate.js';
+import { showErrorToast, showSuccessToast } from '../../utils/helpers.js';
 
 const REPORT_LIMIT = 50;
 const REPORT_STATUSES = ['open', 'resolved', 'dismissed'];
@@ -84,26 +85,6 @@ function getBanDisabledReason(report) {
 
 function formatActionLabel(action) {
   return ACTION_OPTIONS.find((option) => option.value === action)?.label || action || 'No side effect';
-}
-
-function StatusBadge({ status }) {
-  const normalized = status || 'open';
-
-  return (
-    <span
-      className={clsx(
-        'inline-flex rounded-full px-2 py-1 text-xs font-semibold capitalize',
-        normalized === 'open' && 'bg-accent/10 text-accent',
-        normalized === 'resolved' && 'bg-success/10 text-success',
-        normalized === 'dismissed' && 'bg-fg/5 text-muted',
-        normalized === 'hidden' && 'bg-accent/10 text-accent',
-        normalized === 'removed' && 'bg-danger/10 text-danger',
-        normalized === 'active' && 'bg-success/10 text-success',
-      )}
-    >
-      {normalized}
-    </span>
-  );
 }
 
 function Segmented({ label, options, value, onChange }) {
@@ -393,11 +374,11 @@ export function AdminReportsPage() {
         action: actionValue,
       });
 
-      toast.success(data?.message === 'Already resolved' ? 'Already resolved.' : statusValue === 'dismissed' ? 'Report dismissed.' : 'Report resolved.');
+      showSuccessToast(data?.message === 'Already resolved' ? 'Already resolved.' : statusValue === 'dismissed' ? 'Report dismissed.' : 'Report resolved.');
       setRetryToken((token) => token + 1);
     } catch (apiError) {
       const normalized = extractApiError(apiError, 'Report action failed.');
-      toast.error(normalized.message);
+      showErrorToast(normalized.message);
     } finally {
       setActionLoadingId('');
     }

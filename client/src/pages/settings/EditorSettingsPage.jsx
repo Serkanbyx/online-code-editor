@@ -2,6 +2,7 @@ import Editor from '@monaco-editor/react';
 import clsx from 'clsx';
 import { useMemo } from 'react';
 
+import ToggleSwitch from '../../components/common/ToggleSwitch.jsx';
 import { usePreferences } from '../../context/PreferencesContext.jsx';
 import { EDITOR_VIEWER_OPTIONS } from '../../utils/constants.js';
 
@@ -127,32 +128,6 @@ function SegmentedControl({ label, value, options, onChange }) {
           );
         })}
       </div>
-    </div>
-  );
-}
-
-function ToggleSwitch({ label, checked, onChange }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-fg/10 bg-fg/2 p-4">
-      <span className="text-sm font-medium text-fg">{label}</span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={clsx(
-          'relative h-7 w-12 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent/30',
-          checked ? 'bg-accent' : 'bg-fg/20',
-        )}
-      >
-        <span className="sr-only">{label}</span>
-        <span
-          className={clsx(
-            'absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform',
-            checked ? 'translate-x-6' : 'translate-x-1',
-          )}
-        />
-      </button>
     </div>
   );
 }

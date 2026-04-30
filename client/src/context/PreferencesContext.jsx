@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import toast from 'react-hot-toast';
 
 import profileService from '../api/profileService.js';
+import { showErrorToast } from '../utils/helpers.js';
 import { useAuth } from './AuthContext.jsx';
 
 const GUEST_PREFS_STORAGE_KEY = 'codenest.prefs.guest';
@@ -180,7 +180,7 @@ export function PreferencesProvider({ children }) {
       } catch (error) {
         updateUser({ preferences: mergeServerPrefs(previousSnapshot) });
         const message = error?.response?.data?.message ?? 'Failed to save preference.';
-        toast.error(message);
+        showErrorToast(message);
       } finally {
         pendingRevertRef.current = null;
       }

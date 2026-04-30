@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
-import toast from 'react-hot-toast';
 
 import Avatar from '../common/Avatar.jsx';
 import CommentItem from './CommentItem.jsx';
 import commentService from '../../api/commentService.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { extractApiError } from '../../utils/apiError.js';
+import { showSuccessToast } from '../../utils/helpers.js';
 
 const COMMENTS_PAGE_LIMIT = 12;
 const CONTENT_MAX_LENGTH = 1000;
@@ -202,7 +202,7 @@ export function CommentThread({ snippetId, initialCount = 0 }) {
       setItems((previous) => [...previous, created]);
     }
 
-    toast.success('Comment posted');
+    showSuccessToast('Comment posted');
   }, [snippetId, page, total]);
 
   const handleCommentUpdated = useCallback((updated) => {

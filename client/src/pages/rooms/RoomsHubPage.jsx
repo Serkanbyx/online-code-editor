@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
 import clsx from 'clsx';
 
 import roomService from '../../api/roomService.js';
@@ -14,6 +13,7 @@ import Spinner from '../../components/common/Spinner.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { extractApiError } from '../../utils/apiError.js';
 import { formatAbsoluteDate, formatRelativeDate } from '../../utils/formatDate.js';
+import { showErrorToast, showSuccessToast } from '../../utils/helpers.js';
 import { SUPPORTED_LANGUAGES, getLanguageLabel } from '../../utils/languages.js';
 
 const ROOM_LIST_LIMIT = 12;
@@ -215,7 +215,7 @@ export function RoomsHubPage() {
       });
       const nextRoomId = getRoomId(data?.room);
 
-      toast.success('Room created');
+      showSuccessToast('Room created');
       if (nextRoomId) {
         navigate(`/room/${nextRoomId}`);
       } else {
@@ -252,10 +252,10 @@ export function RoomsHubPage() {
       await roomService.remove(roomId);
       setRooms((previous) => previous.filter((room) => getRoomId(room) !== roomId));
       setRoomToDelete(null);
-      toast.success('Room deleted');
+      showSuccessToast('Room deleted');
     } catch (apiError) {
       const normalized = extractApiError(apiError, 'Could not delete the room.');
-      toast.error(normalized.message);
+      showErrorToast(normalized.message);
     } finally {
       setDeleting(false);
     }
