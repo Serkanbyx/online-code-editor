@@ -6,7 +6,7 @@
 
   <h1>CodeNest</h1>
 
-  <p><em>Production-grade online code editor — realtime collaboration, snippet discovery, secure execution, and admin-ready moderation.</em></p>
+  <p><em>A full-stack online code editor with realtime collaboration, snippet sharing, secure code execution, and a modern MERN-style architecture.</em></p>
 
   <p>
     <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License" />
