@@ -34,6 +34,10 @@ export default function errorHandler(error, _req, res, _next) {
     errors = error.details;
   }
 
+  if (statusCode >= 500) {
+    console.error(error);
+  }
+
   const response = { message };
 
   if (errors) {
