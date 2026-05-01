@@ -1,5 +1,8 @@
 # CodeNest
 
+[![Created by Serkanby](https://img.shields.io/badge/Created%20by-Serkanby-blue?style=flat-square)](https://serkanbayraktar.com/)
+[![GitHub](https://img.shields.io/badge/GitHub-Serkanbyx-181717?style=flat-square&logo=github)](https://github.com/Serkanbyx)
+
 CodeNest is a full-stack online code editor with realtime collaboration, Monaco-powered editing, Piston code execution, and a public snippet community.
 
 ![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=111)
@@ -26,6 +29,7 @@ CodeNest is a full-stack online code editor with realtime collaboration, Monaco-
 - Admin dashboard, user management, content moderation, and report resolution.
 - Settings for theme, editor preferences, density, privacy, and notifications.
 - Responsive UI for desktop and mobile editor layouts.
+- Swagger UI API documentation at `/api-docs` with OpenAPI JSON at `/api-docs.json`.
 
 ## Roles & Permissions
 
@@ -357,6 +361,20 @@ client/
 Use MongoDB Atlas for the database, Render for the backend, and Netlify for the frontend. Render runs Express, Socket.io, and y-websocket on the same service URL with `/api`, `/socket.io`, and `/yjs/<roomId>` paths. Netlify builds from `client/` with `npm run build` and publishes `client/dist`.
 
 In production, set `CORS_ORIGIN` to the exact Netlify URL, use a `JWT_SECRET` with at least 32 characters, keep `PISTON_BASE_URL=https://emkc.org/api/v2/piston`, and configure `VITE_API_URL`, `VITE_SOCKET_URL`, and `VITE_YJS_URL` to the Render service. On Render free tier, configure an uptime monitor against `/api/health` and keep the client cold-start timeout UX enabled.
+
+## Developer
+
+**Serkanby**
+
+- Website: [serkanbayraktar.com](https://serkanbayraktar.com/)
+- GitHub: [@Serkanbyx](https://github.com/Serkanbyx)
+- Email: [serkanbyx1@gmail.com](mailto:serkanbyx1@gmail.com)
+
+## Contact
+
+- [Open an Issue](https://github.com/Serkanbyx/s4.17_Online-Code-Editor/issues)
+- Email: [serkanbyx1@gmail.com](mailto:serkanbyx1@gmail.com)
+- Website: [serkanbayraktar.com](https://serkanbayraktar.com/)
 
 ## License
 
