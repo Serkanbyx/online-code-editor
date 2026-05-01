@@ -134,7 +134,14 @@ snippetSchema.virtual('codePreview').get(function () {
 
 snippetSchema.index({ author: 1, createdAt: -1 });
 snippetSchema.index({ isPublic: 1, status: 1, createdAt: -1 });
-snippetSchema.index({ title: 'text', description: 'text', tags: 'text' });
+snippetSchema.index(
+  { title: 'text', description: 'text', tags: 'text' },
+  {
+    name: 'snippet_text_search',
+    default_language: 'none',
+    language_override: 'textSearchLanguage',
+  },
+);
 
 snippetSchema.set('toJSON', {
   virtuals: true,

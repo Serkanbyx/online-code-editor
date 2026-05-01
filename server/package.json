@@ -9,7 +9,9 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "seed": "npm run seed:admin",
-    "seed:admin": "node scripts/seedAdmin.js"
+    "seed:admin": "node scripts/seedAdmin.js",
+    "migrate": "npm run migrate:snippet-indexes",
+    "migrate:snippet-indexes": "node scripts/migrateSnippetIndexes.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
