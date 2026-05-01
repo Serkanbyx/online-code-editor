@@ -27,6 +27,10 @@ export function LoginPage() {
     () => sanitizeNext(searchParams.get('next')),
     [searchParams],
   );
+  const registerPath = useMemo(
+    () => (nextPath === '/' ? '/register' : `/register?next=${encodeURIComponent(nextPath)}`),
+    [nextPath],
+  );
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -86,7 +90,7 @@ export function LoginPage() {
       footer={
         <>
           Don&apos;t have an account?{' '}
-          <Link to="/register" className="font-medium text-accent hover:underline">
+          <Link to={registerPath} className="font-medium text-accent hover:underline">
             Register
           </Link>
         </>

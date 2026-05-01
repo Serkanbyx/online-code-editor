@@ -21,6 +21,7 @@ const browserGlobals = {
   setTimeout: 'readonly',
   URL: 'readonly',
   URLSearchParams: 'readonly',
+  Worker: 'readonly',
   WebSocket: 'readonly',
   window: 'readonly',
 };

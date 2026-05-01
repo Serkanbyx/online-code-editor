@@ -159,7 +159,6 @@ export function EditorPage() {
   const { user } = useAuth();
   const { updatePref, prefs } = usePreferences();
   const { socket } = useSocket();
-  const { ytext, awareness, status } = useYjsRoom(roomId);
   const [, copyToClipboard] = useCopyToClipboard();
   const monacoBindingRefs = useRef({ editor: null, monaco: null });
   const runtimeCatalogRef = useRef(null);
@@ -180,6 +179,8 @@ export function EditorPage() {
   const [activeTab, setActiveTab] = useState('code');
   const [retryToken, setRetryToken] = useState(0);
 
+  const activeRoomId = room ? roomId : null;
+  const { ytext, awareness, status } = useYjsRoom(activeRoomId);
   const isOwner = useMemo(() => isOwnedByUser(room, user), [room, user]);
   const currentRuntime = useMemo(
     () => getLatestRuntime(runtimeCatalog, room?.language),
@@ -188,12 +189,12 @@ export function EditorPage() {
   const displayedRuntimeVersion = outputState.version ?? currentRuntime?.version ?? null;
 
   useEffect(() => {
-    if (!socket || !roomId) return undefined;
+    if (!socket || !activeRoomId) return undefined;
 
-    socket.emit('room:join', { roomId });
+    socket.emit('room:join', { roomId: activeRoomId });
 
     function handleLanguageChange(payload = {}) {
-      if (payload.roomId !== roomId || !payload.language) return;
+      if (payload.roomId !== activeRoomId || !payload.language) return;
 
       setRoom((currentRoom) => {
         if (!currentRoom) return currentRoom;
@@ -212,9 +213,9 @@ export function EditorPage() {
 
     return () => {
       socket.off('room:languageChange', handleLanguageChange);
-      socket.emit('room:leave', { roomId });
+      socket.emit('room:leave', { roomId: activeRoomId });
     };
-  }, [roomId, socket]);
+  }, [activeRoomId, socket]);
 
   useEffect(() => {
     if (runtimeCatalogRef.current) return undefined;
@@ -247,6 +248,7 @@ export function EditorPage() {
     let cancelled = false;
     setLoading(true);
     setLoadError(null);
+    setRoom(null);
 
     roomService
       .getById(roomId)

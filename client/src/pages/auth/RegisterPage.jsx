@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useAuth } from '../../context/AuthContext.jsx';
 import AuthCard from '../../components/auth/AuthCard.jsx';
@@ -16,9 +16,25 @@ import { showSuccessToast } from '../../utils/helpers.js';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_PATTERN = /^[a-z0-9_]{3,24}$/;
 
+function sanitizeNext(rawNext) {
+  if (!rawNext || typeof rawNext !== 'string') return '/';
+  // Only allow same-origin relative paths — prevents open-redirect abuse.
+  if (!rawNext.startsWith('/') || rawNext.startsWith('//')) return '/';
+  return rawNext;
+}
+
 export function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextPath = useMemo(
+    () => sanitizeNext(searchParams.get('next')),
+    [searchParams],
+  );
+  const loginPath = useMemo(
+    () => (nextPath === '/' ? '/login' : `/login?next=${encodeURIComponent(nextPath)}`),
+    [nextPath],
+  );
 
   const [form, setForm] = useState({
     username: '',
@@ -109,7 +125,7 @@ export function RegisterPage() {
         password: form.password,
       });
       showSuccessToast(`Welcome to CodeNest, ${user?.displayName ?? user?.username ?? ''}!`.trim());
-      navigate('/', { replace: true });
+      navigate(nextPath, { replace: true });
     } catch (error) {
       const normalized = extractApiError(
         error,
@@ -135,7 +151,7 @@ export function RegisterPage() {
       footer={
         <>
           Already have an account?{' '}
-          <Link to="/login" className="font-medium text-accent hover:underline">
+          <Link to={loginPath} className="font-medium text-accent hover:underline">
             Login
           </Link>
         </>
