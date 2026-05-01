@@ -10,6 +10,11 @@ const LEGAL_LINKS = [
   { label: 'Terms', to: '/' },
 ];
 
+const CREATOR_LINKS = [
+  { label: 'Serkanby', href: 'https://serkanbayraktar.com/' },
+  { label: 'Github', href: 'https://github.com/Serkanbyx' },
+];
+
 export function Footer() {
   const year = new Date().getFullYear();
 
@@ -61,7 +66,22 @@ export function Footer() {
       <div className="border-t border-fg/10">
         <div className="container mx-auto flex flex-col items-center justify-between gap-2 px-4 py-4 text-xs text-muted md:flex-row">
           <p>© {year} CodeNest. All rights reserved.</p>
-          <p>Built with React, Vite and Tailwind.</p>
+          <p className="sign flex flex-wrap items-center justify-center gap-1">
+            <span>Created by</span>
+            {CREATOR_LINKS.map((link, index) => (
+              <span key={link.href} className="flex items-center gap-1">
+                <a
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-fg/80 transition-colors hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent/40 focus:ring-offset-2 focus:ring-offset-bg"
+                >
+                  {link.label}
+                </a>
+                {index < CREATOR_LINKS.length - 1 && <span aria-hidden="true">|</span>}
+              </span>
+            ))}
+          </p>
         </div>
       </div>
     </footer>
