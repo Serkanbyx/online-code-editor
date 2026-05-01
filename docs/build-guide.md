@@ -1,10 +1,90 @@
 # CodeNest — Step-by-Step Build Guide
 
+> **Archived: original build playbook.**
+> This is the 49-step roadmap used to build CodeNest from scratch. The codebase
+> has evolved since the first draft, especially around production deployment and
+> code execution: the public Piston execute API now requires authorization, so the
+> live portfolio build uses a browser-based JavaScript runner while keeping the
+> backend Piston proxy path available for future provider access or self-hosting.
+> For current architecture, setup, and deployment notes, see the project [README](../README.md).
+
+---
+
 > **Project Summary:**
-> CodeNest is a full-stack online code editor that brings the VS Code editing experience (Monaco) to the browser, lets multiple users co-edit the same document in real time using Yjs CRDT, executes code safely against the Piston API across 30+ languages, and provides a snippet library with public discovery, likes, comments, and forking. Roles include `user` (default) and `admin` (moderation, user management). Security layers cover JWT auth, helmet, strict CORS, per-route rate limiters, custom NoSQL sanitization compatible with Express 5, mass-assignment protection, ownership checks, and a 30+ item production audit. Stack: React 19 + Vite + Tailwind v4 + Monaco + Yjs on the client; Node + Express 5 + Mongoose 9 + Socket.io + y-websocket + Piston on the server.
+> CodeNest is a full-stack online code editor that brings the VS Code editing experience (Monaco) to the browser, lets multiple users co-edit the same document in real time using Yjs CRDT, runs JavaScript in the browser for portfolio demos, keeps a backend code-runner proxy path for future provider access, and provides a snippet library with public discovery, likes, comments, and forking. Roles include `user` (default) and `admin` (moderation, user management). Security layers cover JWT auth, helmet, strict CORS, per-route rate limiters, custom NoSQL sanitization compatible with Express 5, mass-assignment protection, ownership checks, and a 30+ item production audit. Stack: React 19 + Vite + Tailwind v4 + Monaco + Yjs on the client; Node + Express 5 + Mongoose 9 + Socket.io + y-websocket on the server.
 
 > Each step below is a self-contained prompt. Execute them in order.
-> Stack: React 19 + Vite, Node/Express 5, MongoDB/Mongoose 9, JWT, TailwindCSS v4, React Router v7, Axios, Socket.io, Yjs + y-monaco + y-websocket, Monaco Editor, Piston API.
+> Stack: React 19 + Vite, Node/Express 5, MongoDB/Mongoose 9, JWT, TailwindCSS v4, React Router v7, Axios, Socket.io, Yjs + y-monaco + y-websocket, Monaco Editor, browser Web Worker runner, optional Piston API proxy.
+
+---
+
+## Table of Contents
+
+**PHASE 1 — Backend Foundation**
+- STEP 1 — Project Scaffolding & Dependency Setup
+- STEP 2 — Environment Configuration & Database Connection
+- STEP 3 — User Model & Schema
+- STEP 4 — Auth System & Admin Seed
+
+**PHASE 2 — Backend Resources**
+- STEP 5 — Snippet Model & Core CRUD
+- STEP 6 — Public Snippet Explore (Search, Filter, Sort, Pagination)
+- STEP 7 — Like System
+- STEP 8 — Fork Snippet Feature
+- STEP 9 — Comments on Snippets
+- STEP 10 — Room Model & Room Management API
+- STEP 11 — Code Execution: Piston API Integration
+- STEP 12 — Avatar Upload (Multer + Cloudinary)
+- STEP 13 — Profile Endpoints (Public Profile + Preferences)
+- STEP 14 — Socket.io Server (Presence & Cursor Events)
+- STEP 15 — Yjs y-websocket Server (CRDT Realtime Sync)
+- STEP 16 — Yjs Awareness (Cursor Presence in Editor)
+- STEP 17 — Report System
+- STEP 18 — Admin API: Dashboard & User Management
+- STEP 19 — Admin API: Content Moderation (Snippets & Comments)
+- STEP 20 — Admin API: Report Queue
+- STEP 21 — Backend Validation & Security Audit
+
+**PHASE 3 — Client Foundation**
+- STEP 22 — Client Setup: Vite, Tailwind v4 & Theme
+- STEP 23 — Axios Instance & Service Layer
+- STEP 24 — Custom Hooks
+- STEP 25 — Contexts: Auth, Preferences, Socket
+- STEP 26 — Layouts, Navbar, Routing & Guards
+
+**PHASE 4 — Client Pages**
+- STEP 27 — Auth Pages (Login, Register)
+- STEP 28 — Home / Explore Public Snippets
+- STEP 29 — Snippet Detail Page
+- STEP 30 — My Snippets Dashboard
+- STEP 31 — Rooms Hub Page
+- STEP 32 — Editor Page Skeleton
+- STEP 33 — Editor: Yjs + y-monaco Binding
+- STEP 34 — Editor: Awareness, Remote Cursors, User List
+- STEP 35 — Editor: Run Code & Output Panel
+- STEP 36 — Editor: Save Snippet & Share
+- STEP 37 — Snippet Edit Page
+- STEP 38 — Public User Profile Page
+- STEP 39 — Settings Pages: Profile & Account
+- STEP 40 — Settings Pages: Appearance & Editor
+- STEP 41 — Settings Pages: Privacy & Notifications
+- STEP 42 — Admin Pages: Dashboard & Users
+- STEP 43 — Admin Pages: Snippets & Comments Moderation
+- STEP 44 — Admin Pages: Report Queue
+
+**PHASE 5 — Polish & Deploy**
+- STEP 45 — UX Enhancements & Reusable UI
+- STEP 46 — 404 Page & Route Guard Refinements
+- STEP 47 — README & Documentation
+- STEP 48 — Code Cleanup & Pre-Deploy Review
+- STEP 49 — Deployment (MongoDB Atlas + Render + Netlify)
+
+**Appendices**
+- Appendix A — Shared Constants
+- Appendix B — Common Patterns
+- Appendix C — Editor Snapshot
+- Appendix D — Common Pitfalls & Quick Fixes
+- Appendix E — Per-Phase Pre-Flight Checklist
 
 ---
 
@@ -34,13 +114,14 @@ flowchart LR
     Client[React + Vite Client] -->|"REST + JWT"| API[Express 5 API]
     Client -->|"Socket.io presence"| SIO[Socket.io Server]
     Client -->|"y-websocket CRDT"| Yjs[Yjs WebSocket Server]
+    Client -->|"Web Worker"| BrowserRunner[Browser JavaScript Runner]
     API --> Mongo[(MongoDB)]
     SIO --> Mongo
-    API -->|"HTTP POST"| Piston[Piston API]
+    API -->|"Optional HTTP POST"| Piston[Piston API / Self-hosted Runner]
     API -->|"Optional"| Cloud[Cloudinary]
 ```
 
-The single Render service runs Express, Socket.io, and y-websocket on the same HTTP server (one URL, three layers). Code execution is always proxied server-side to enforce rate limits and isolate the Piston runtime catalog.
+The single Render service runs Express, Socket.io, and y-websocket on the same HTTP server (one URL, three layers). The original guide used a server-side Piston proxy for code execution; the deployed portfolio build now runs JavaScript in a browser Web Worker because the public Piston execute endpoint requires authorization.
 
 ---
 
@@ -58,9 +139,10 @@ Create the monorepo workspace at the project root with two top-level folders: `s
 codenest/
   server/
   client/
+  docs/
+    build-guide.md
   .gitignore
   README.md
-  STEPS.md
 ```
 
 ### Server Folder Tree
@@ -2932,4 +3014,4 @@ Run these checks before moving from one phase to the next. They are designed to 
 
 ---
 
-End of `STEPS.md`. Execute steps strictly in order. Each step is a complete, standalone prompt; do not skip ahead even if the user stack already includes a step's deliverable, because later steps assume the exact field names, route paths, and middleware ordering specified above.
+End of `docs/build-guide.md`. Execute steps strictly in order. Each step is a complete, standalone prompt; do not skip ahead even if the user stack already includes a step's deliverable, because later steps assume the exact field names, route paths, and middleware ordering specified above.

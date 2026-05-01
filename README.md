@@ -163,9 +163,10 @@ Code runs through the Piston API hosted at emkc.org. It is free, requires no API
 codenest/
   server/
   client/
+  docs/
+    build-guide.md
   .gitignore
   README.md
-  STEPS.md
 ```
 
 ```text
