@@ -1,9 +1,39 @@
-# 🧑‍💻 CodeNest
+<div align="center">
+  <p>
+    <img src="./client/public/favicon.svg" alt="CodeNest logo" width="32" height="32" />
+    <strong> CodeNest</strong>
+  </p>
 
-CodeNest is a full-stack online code editor built with **React 19**, **Vite**, **Tailwind CSS 4**, **Express 5**, **MongoDB**, **Socket.io**, **Yjs**, and **Monaco Editor**. It combines realtime collaboration, public snippet discovery, server-side code execution, comments, likes, profiles, settings, and admin-ready moderation workflows in a modern MERN-style architecture.
+  <h1>CodeNest</h1>
 
-[![Created by Serkanby](https://img.shields.io/badge/Created%20by-Serkanby-blue?style=flat-square)](https://serkanbayraktar.com/)
-[![GitHub](https://img.shields.io/badge/GitHub-Serkanbyx-181717?style=flat-square&logo=github)](https://github.com/Serkanbyx)
+  <p><em>Production-grade online code editor — realtime collaboration, snippet discovery, secure execution, and admin-ready moderation.</em></p>
+
+  <p>
+    <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License" />
+    <img src="https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen?style=flat-square" alt="Node.js version" />
+    <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React 19" />
+    <img src="https://img.shields.io/badge/Express-5-000000?style=flat-square&logo=express&logoColor=white" alt="Express 5" />
+    <img src="https://img.shields.io/badge/MongoDB-Atlas-47A248?style=flat-square&logo=mongodb&logoColor=white" alt="MongoDB Atlas" />
+    <img src="https://img.shields.io/badge/Socket.io-4-010101?style=flat-square&logo=socketdotio&logoColor=white" alt="Socket.io 4" />
+    <img src="https://img.shields.io/badge/Yjs-CRDT-f7df1e?style=flat-square" alt="Yjs CRDT" />
+    <img src="https://img.shields.io/badge/Monaco-Editor-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white" alt="Monaco Editor" />
+    <img src="https://img.shields.io/badge/API-Render-46E3B7?style=flat-square&logo=render&logoColor=white" alt="API on Render" />
+    <img src="https://img.shields.io/badge/Web-Netlify-00C7B7?style=flat-square&logo=netlify&logoColor=white" alt="Web on Netlify" />
+    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square" alt="PRs welcome" />
+  </p>
+
+  <p>
+    <a href="https://online-code-editorr.netlify.app/">Live Demo</a> •
+    <a href="https://online-code-editorr.netlify.app/explore">Browse Snippets</a> •
+    <a href="#installation">Quick Start</a> •
+    <a href="#api-endpoints">API Docs</a> •
+    <a href="#screenshots">Screenshots</a>
+  </p>
+
+  <a href="https://online-code-editorr.netlify.app/">
+    <img src="./assets/screenshots/explore.png" alt="CodeNest snippet discovery page" />
+  </a>
+</div>
 
 ---
 
