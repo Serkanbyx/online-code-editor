@@ -2,7 +2,7 @@ import env from '../config/env.js';
 import ApiError from './ApiError.js';
 
 const runtimeCacheDurationMs = 60 * 60 * 1000;
-const requestTimeoutMs = 20000;
+const requestTimeoutMs = 45000;
 
 let runtimeCache = {
   value: null,
