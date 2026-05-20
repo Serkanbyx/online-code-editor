@@ -2,12 +2,20 @@ export const SUPPORTED_LANGUAGES = [
   'javascript',
   'typescript',
   'python',
+  'java',
   'c',
   'cpp',
+  'csharp',
   'go',
   'rust',
   'ruby',
   'php',
+  'swift',
+  'kotlin',
+  'scala',
+  'r',
+  'dart',
+  'elixir',
   'perl',
   'lua',
   'bash',
@@ -18,10 +26,6 @@ export const SUPPORTED_LANGUAGES = [
   'yaml',
   'markdown',
 ];
-
-// Heavy runtimes excluded from execution on free tier (512 MB RAM):
-// 'java', 'csharp', 'swift', 'kotlin', 'scala', 'dart', 'elixir', 'r'
-// Re-enable after testing on a higher-memory Piston instance.
 
 export const LANGUAGE_COLORS = {
   javascript: '#f7df1e',
