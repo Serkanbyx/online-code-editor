@@ -1,18 +1,28 @@
 import { Link } from 'react-router-dom';
 
+const GITHUB_REPO = 'https://github.com/serkanbyx/online-code-editor';
+
 const RESOURCE_LINKS = [
-  { label: 'Documentation', href: 'https://github.com/Serkanbyx/codenest#readme', external: true },
-  { label: 'GitHub', href: 'https://github.com/Serkanbyx/codenest', external: true },
+  { label: 'Documentation', href: `${GITHUB_REPO}#readme`, external: true },
+  { label: 'GitHub', href: GITHUB_REPO, external: true },
 ];
 
 const LEGAL_LINKS = [
-  { label: 'Privacy', href: 'https://github.com/Serkanbyx/codenest/blob/main/SECURITY.md', external: true },
-  { label: 'Terms', href: 'https://github.com/Serkanbyx/codenest/blob/main/CODE_OF_CONDUCT.md', external: true },
+  {
+    label: 'Security',
+    href: `${GITHUB_REPO}/blob/main/.github/SECURITY.md`,
+    external: true,
+  },
+  {
+    label: 'Code of Conduct',
+    href: `${GITHUB_REPO}/blob/main/.github/CODE_OF_CONDUCT.md`,
+    external: true,
+  },
 ];
 
 const CREATOR_LINKS = [
   { label: 'Serkanby', href: 'https://serkanbayraktar.com/' },
-  { label: 'Github', href: 'https://github.com/Serkanbyx' },
+  { label: 'GitHub', href: 'https://github.com/Serkanbyx' },
 ];
 
 export function Footer() {

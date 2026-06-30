@@ -10,6 +10,8 @@ node_modules/
 dist/
 build/
 coverage/
+client/dist/
+server/dist/
 
 # Logs
 logs/
@@ -17,6 +19,7 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
 # OS / editor metadata
 .DS_Store

@@ -647,7 +647,7 @@ Netlify reads SPA redirect rules from `client/netlify.toml` (already included). 
 
 ## Contributing
 
-Contributions are welcome! Please read [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md) for setup instructions, branch naming, and PR guidelines. The original step-by-step build playbook lives in [docs/build-guide.md](./docs/build-guide.md).
+Contributions are welcome! Please read [.github/CONTRIBUTING.md](./.github/CONTRIBUTING.md) for setup instructions, branch naming, and PR guidelines. **All user-facing copy, docs, and contributor communication must be in English.** The original step-by-step build playbook lives in [docs/build-guide.md](./docs/build-guide.md).
 
 ### Commit Message Convention
 

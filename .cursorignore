@@ -1,0 +1,20 @@
+﻿# Dependencies (large, regenerated with npm install)
+**/node_modules/
+
+# Build output (regenerated with npm run build)
+**/dist/
+**/build/
+**/coverage/
+
+# Vite / tooling cache
+**/.vite/
+**/.cache/
+
+# Environment secrets (never index)
+**/.env
+**/.env.local
+**/.env.*.local
+
+# OS / editor noise
+**/.DS_Store
+**/Thumbs.db

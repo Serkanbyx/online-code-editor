@@ -11,6 +11,7 @@ First off, thank you for considering contributing to this project! It's people l
   - [Pull Requests](#pull-requests)
 - [Development Setup](#development-setup)
 - [Style Guidelines](#style-guidelines)
+  - [Language](#language)
   - [Git Commit Messages](#git-commit-messages)
   - [Code Style](#code-style)
 - [Branch Naming Convention](#branch-naming-convention)
@@ -96,6 +97,15 @@ cd client && npm run dev
 The API runs at `http://localhost:5000` and the client at `http://localhost:5173`.
 
 ## Style Guidelines
+
+### Language
+
+This project is **English-only**. Write all of the following in English:
+
+- User-facing UI copy, toasts, and validation messages
+- API responses and Swagger descriptions
+- Documentation, issues, pull requests, and commit messages
+- Code comments intended for other contributors
 
 ### Git Commit Messages
 

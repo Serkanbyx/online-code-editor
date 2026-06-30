@@ -10,6 +10,8 @@
 
 ---
 
+> **Language:** This project is English-only — UI copy, API messages, documentation, issues, PRs, and commit messages must all be written in English.
+
 > **Project Summary:**
 > CodeNest is a full-stack online code editor that brings the VS Code editing experience (Monaco) to the browser, lets multiple users co-edit the same document in real time using Yjs CRDT, runs JavaScript locally in a Web Worker sandbox, executes Python/Java/Go/Rust and other Piston-backed languages through the authenticated `/api/code/run` proxy, and provides a snippet library with public discovery, likes, comments, and forking. Roles include `user` (default) and `admin` (moderation, user management). Security layers cover JWT auth, Helmet, strict CORS, tiered rate limiters, express-validator schemas, in-place mongo-sanitize on body/params/query, mass-assignment protection, ownership checks, and avatar uploads restricted to Cloudinary. Stack: React 19 + Vite + Tailwind v4 + Monaco + Yjs on the client; Node + Express 5 + Mongoose 9 + Socket.io + y-websocket on the server.
 
@@ -2954,7 +2956,7 @@ This is a debugging reference. When something breaks, check this table first —
 | Direct URL `/room/abc-123` returns 404 on Netlify | SPA rewrite is missing | Add the `_redirects` rule or `netlify.toml` from Step 49 |
 | First request after 15 minutes idle takes ~60s | Render free tier cold start | Set up the UptimeRobot ping from Step 49 + add the cold-start UX in axios |
 | WebSocket connection refused in production | `VITE_YJS_URL` uses `ws://` instead of `wss://` | Update env variable; redeploy frontend |
-| Admin paneline can be accessed from a logged-in non-admin user via direct URL navigation | `AdminRoute` is missing or `isAdmin` is computed only client-side without server enforcement | The page itself relies on `/api/admin/*` which has `adminOnly`; the 403 will appear, but the URL guard should prevent the flash. Verify both layers |
+| Admin panel can be accessed from a logged-in non-admin user via direct URL navigation | `AdminRoute` is missing or `isAdmin` is computed only client-side without server enforcement | The page itself relies on `/api/admin/*` which has `adminOnly`; the 403 will appear, but the URL guard should prevent the flash. Verify both layers |
 
 ---
 
