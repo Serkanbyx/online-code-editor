@@ -1,4 +1,4 @@
-# Contributing to This Project
+# Contributing to CodeNest
 
 First off, thank you for considering contributing to this project! It's people like you that make open source such a great community.
 
@@ -23,38 +23,20 @@ This project and everyone participating in it is governed by our [Code of Conduc
 
 ### Reporting Bugs
 
-Before creating bug reports, please check existing issues to avoid duplicates. When you create a bug report, include as many details as possible:
+Before creating bug reports, please check [existing issues](https://github.com/serkanbyx/online-code-editor/issues) to avoid duplicates. Use the **Bug Report** issue template when you create a new issue.
 
-**Bug Report Template:**
-
-- **Title**: Clear and descriptive title
-- **Description**: Detailed description of the issue
-- **Steps to Reproduce**:
-  1. Go to '...'
-  2. Click on '...'
-  3. See error
-- **Expected Behavior**: What you expected to happen
-- **Actual Behavior**: What actually happened
-- **Screenshots**: If applicable
-- **Environment**:
-  - OS: [e.g., Windows 10, macOS 12]
-  - Browser: [e.g., Chrome 96, Firefox 95]
-  - Version: [e.g., 1.0.0]
+Include as many details as possible: steps to reproduce, expected vs. actual behavior, browser/OS, and screenshots when relevant.
 
 ### Suggesting Features
 
-Feature suggestions are welcome! Please provide:
+Feature suggestions are welcome! Use the **Feature Request** issue template and provide:
 
-- **Clear title** describing the feature
-- **Detailed description** of the proposed functionality
-- **Use case**: Why this feature would be useful
-- **Possible implementation**: If you have ideas on how to implement it
+- A clear title describing the feature
+- A detailed description of the proposed functionality
+- Why the feature would be useful
+- Possible implementation ideas (optional)
 
-Before suggesting, please check if:
-
-- The feature already exists
-- There's an open issue for this feature
-- It aligns with the project's goals
+Before suggesting, please check if the feature already exists or if there is an open issue for it.
 
 ### Pull Requests
 
@@ -62,10 +44,10 @@ Before suggesting, please check if:
 2. **Clone** your fork locally
 3. **Create a branch** for your feature or fix
 4. **Make your changes** following our style guidelines
-5. **Test** your changes thoroughly
+5. **Test** your changes thoroughly (`npm run lint` in both `client/` and `server/`)
 6. **Commit** your changes with clear messages
 7. **Push** to your fork
-8. **Open a Pull Request**
+8. **Open a Pull Request** using the provided PR template
 
 **Pull Request Checklist:**
 
@@ -80,27 +62,38 @@ Before suggesting, please check if:
 
 ### Prerequisites
 
-Make sure you have the following installed:
-
-- Git
-- A code editor (VS Code recommended)
-- Required runtime/dependencies for the project
+- **Node.js** v20+ and **npm**
+- **MongoDB** — MongoDB Atlas or a local instance
+- **Cloudinary** account (optional, for avatar uploads)
 
 ### Local Installation
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/REPOSITORY_NAME.git
+git clone https://github.com/YOUR_USERNAME/online-code-editor.git
 
 # Navigate to project directory
-cd REPOSITORY_NAME
+cd online-code-editor
 
-# Install dependencies (if applicable)
-# npm install / pip install -r requirements.txt / etc.
+# Set up environment variables
+cp server/.env.example server/.env
+cp client/.env.example client/.env
 
-# Start development server (if applicable)
-# npm start / python app.py / etc.
+# Install dependencies
+cd server && npm install
+cd ../client && npm install
+
+# Seed the admin user (requires ADMIN_EMAIL and ADMIN_PASSWORD in server/.env)
+cd ../server && npm run seed
+
+# Terminal 1 — Backend
+cd server && npm run dev
+
+# Terminal 2 — Frontend
+cd client && npm run dev
 ```
+
+The API runs at `http://localhost:5000` and the client at `http://localhost:5173`.
 
 ## Style Guidelines
 
@@ -120,12 +113,11 @@ We follow semantic commit messages:
 
 **Examples:**
 
-```text
-feat: add user authentication
-fix: resolve login redirect issue
-docs: update installation instructions
-style: format code with prettier
-refactor: simplify validation logic
+```
+feat: add room chat sidebar
+fix: resolve Piston run timeout on cold start
+docs: update deployment instructions
+refactor: simplify Yjs connection pooling
 ```
 
 **Commit Message Rules:**
@@ -137,12 +129,13 @@ refactor: simplify validation logic
 
 ### Code Style
 
-- Use consistent indentation (2 or 4 spaces)
-- Use meaningful variable and function names
-- Write comments for complex logic
+- Use consistent indentation (2 spaces)
+- Use meaningful variable and function names in English (camelCase)
+- Write comments for complex logic only
 - Keep functions small and focused
 - Follow DRY (Don't Repeat Yourself) principle
 - Remove unused code and imports
+- Run `npm run lint` before opening a PR
 
 ## Branch Naming Convention
 
@@ -150,15 +143,15 @@ Use descriptive branch names with prefixes:
 
 | Prefix      | Use Case         | Example                   |
 | ----------- | ---------------- | ------------------------- |
-| `feature/`  | New features     | `feature/user-auth`       |
-| `fix/`      | Bug fixes        | `fix/login-error`         |
-| `hotfix/`   | Urgent fixes     | `hotfix/security-patch`   |
-| `docs/`     | Documentation    | `docs/api-guide`          |
-| `refactor/` | Code refactoring | `refactor/database-layer` |
+| `feature/`  | New features     | `feature/room-chat`       |
+| `fix/`      | Bug fixes        | `fix/code-run-throttle`   |
+| `hotfix/`   | Urgent fixes     | `hotfix/jwt-leak`         |
+| `docs/`     | Documentation    | `docs/readme-deploy`      |
+| `refactor/` | Code refactoring | `refactor/snippet-search` |
 
 ## Questions?
 
-Feel free to open an issue with your question or contact the maintainer directly.
+Feel free to [open an issue](https://github.com/serkanbyx/online-code-editor/issues) with your question or start a [Discussion](https://github.com/serkanbyx/online-code-editor/discussions).
 
 ---
 

@@ -52,7 +52,7 @@ app.get('/api-docs.json', (_req, res) => {
 
 app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
-app.use('/api/code', express.json({ limit: '96kb' }));
+app.use('/api/code', express.json({ limit: `${env.MAX_CODE_PAYLOAD_KB + 32}kb` }));
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/code')) {
     next();

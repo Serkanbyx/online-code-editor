@@ -3,11 +3,14 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 
 import App from './App.jsx';
+import { validateClientEnv } from './config/env.js';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { PreferencesProvider } from './context/PreferencesContext.jsx';
 import { SocketProvider } from './context/SocketContext.jsx';
 import './index.css';
 import './monacoWorkers.js';
+
+validateClientEnv();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

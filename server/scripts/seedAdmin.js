@@ -36,7 +36,7 @@ async function seedAdmin() {
 
   await connectDB();
 
-  let admin = await User.findOne({ email: env.ADMIN_EMAIL });
+  let admin = await User.findOne({ email: env.ADMIN_EMAIL }).select('+password');
 
   if (!admin) {
     admin = await User.create({
@@ -46,7 +46,29 @@ async function seedAdmin() {
       password: env.ADMIN_PASSWORD,
       role: 'admin',
     });
+    console.log(`Created admin user: ${admin.email}`);
+    return;
   }
+
+  let updated = false;
+
+  if (admin.role !== 'admin') {
+    admin.role = 'admin';
+    updated = true;
+  }
+
+  if (env.ADMIN_PASSWORD) {
+    admin.password = env.ADMIN_PASSWORD;
+    updated = true;
+  }
+
+  if (updated) {
+    await admin.save();
+    console.log(`Updated admin user: ${admin.email}`);
+    return;
+  }
+
+  console.log(`Admin user already exists: ${admin.email}`);
 }
 
 try {

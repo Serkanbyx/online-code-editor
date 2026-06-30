@@ -20,6 +20,7 @@ import { useYjsRoom } from '../../hooks/useYjsRoom.js';
 import { createAwarenessUser } from '../../utils/awareness.js';
 import { extractApiError } from '../../utils/apiError.js';
 import { showErrorToast, showSuccessToast } from '../../utils/helpers.js';
+import { canRunLanguage } from '../../utils/languages.js';
 
 const DEFAULT_CODE = `// Welcome to your collaborative room.
 // Start typing to sync this document with everyone in the room.
@@ -186,6 +187,10 @@ export function EditorPage() {
     () => getLatestRuntime(runtimeCatalog, room?.language),
     [room?.language, runtimeCatalog],
   );
+  const canRun = useMemo(
+    () => canRunLanguage(room?.language, runtimeCatalog),
+    [room?.language, runtimeCatalog],
+  );
   const displayedRuntimeVersion = outputState.version ?? currentRuntime?.version ?? null;
 
   useEffect(() => {
@@ -252,9 +257,22 @@ export function EditorPage() {
 
     roomService
       .getById(roomId)
-      .then((data) => {
+      .then(async (data) => {
         if (cancelled) return;
-        setRoom(data?.room ?? null);
+
+        const loadedRoom = data?.room ?? null;
+        setRoom(loadedRoom);
+
+        if (!loadedRoom) return;
+
+        try {
+          const joinData = await roomService.join(roomId);
+          if (!cancelled && joinData?.room) {
+            setRoom(joinData.room);
+          }
+        } catch {
+          // Join is best-effort; socket presence still works without it.
+        }
       })
       .catch((apiError) => {
         if (cancelled) return;
@@ -441,7 +459,7 @@ export function EditorPage() {
   const handleRun = useCallback(async () => {
     const now = Date.now();
 
-    if (isRunning || now - lastRunClickRef.current < RUN_THROTTLE_MS) return;
+    if (isRunning || now - lastRunClickRef.current < RUN_THROTTLE_MS || !canRun) return;
 
     lastRunClickRef.current = now;
     setIsRunning(true);
@@ -452,6 +470,7 @@ export function EditorPage() {
         language: room.language,
         code: ytext?.toString() ?? code,
         stdin: outputState.stdin,
+        version: room.language === 'javascript' ? undefined : currentRuntime?.version,
       });
 
       setOutputState((currentOutput) => ({
@@ -477,7 +496,7 @@ export function EditorPage() {
     } finally {
       setIsRunning(false);
     }
-  }, [code, currentRuntime?.version, isRunning, outputState.stdin, room?.language, ytext]);
+  }, [canRun, code, currentRuntime?.version, isRunning, outputState.stdin, room?.language, ytext]);
 
   if (loading) {
     return <EditorShellSkeleton />;
@@ -517,6 +536,7 @@ export function EditorPage() {
           isOwner={isOwner}
           savingRoom={savingRoom}
           isRunning={isRunning}
+          canRun={canRun}
           status={status}
           onRename={handleRename}
           onLanguageChange={handleLanguageChange}

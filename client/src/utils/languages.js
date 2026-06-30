@@ -82,3 +82,9 @@ export function getLanguageLabel(language) {
 export function getLanguageColor(language) {
   return LANGUAGE_COLORS[language] ?? FALLBACK_COLOR;
 }
+
+export function canRunLanguage(language, runtimes = []) {
+  if (!language) return false;
+  if (language === 'javascript') return true;
+  return runtimes.some((runtime) => runtime.language === language);
+}

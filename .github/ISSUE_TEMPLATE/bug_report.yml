@@ -16,7 +16,7 @@ body:
     attributes:
       label: Bug Summary
       description: A brief summary of the bug
-      placeholder: e.g., BMI calculation returns incorrect value
+      placeholder: e.g., Python code run returns 503 in the room editor
     validations:
       required: true
 

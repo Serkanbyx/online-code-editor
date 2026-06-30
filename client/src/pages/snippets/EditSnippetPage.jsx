@@ -14,9 +14,12 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { usePreferences } from '../../context/PreferencesContext.jsx';
 import { extractApiError } from '../../utils/apiError.js';
 import { showErrorToast, showSuccessToast } from '../../utils/helpers.js';
+import { canRunLanguage } from '../../utils/languages.js';
 
 const RUN_THROTTLE_MS = 2000;
 const STDIN_MAX_LENGTH = 8 * 1024;
+const RUN_DISABLED_TOOLTIP =
+  'This language is for editing only. Switch to a supported runtime language to run code.';
 
 const DEFAULT_OUTPUT_STATE = {
   stdout: '',
@@ -106,6 +109,7 @@ export function EditSnippetPage() {
     () => getLatestRuntime(runtimeCatalog, language),
     [language, runtimeCatalog],
   );
+  const canRun = useMemo(() => canRunLanguage(language, runtimeCatalog), [language, runtimeCatalog]);
   const displayedRuntimeVersion = outputState.version ?? currentRuntime?.version ?? null;
   const trimmedTitle = title.trim();
   const canSave = Boolean(trimmedTitle) && !saving && !deleting;
@@ -199,7 +203,7 @@ export function EditSnippetPage() {
   const handleRun = useCallback(async () => {
     const now = Date.now();
 
-    if (isRunning || now - lastRunClickRef.current < RUN_THROTTLE_MS) return;
+    if (isRunning || now - lastRunClickRef.current < RUN_THROTTLE_MS || !canRun) return;
 
     lastRunClickRef.current = now;
     setIsRunning(true);
@@ -209,6 +213,7 @@ export function EditSnippetPage() {
         language,
         code,
         stdin: outputState.stdin,
+        version: language === 'javascript' ? undefined : currentRuntime?.version,
       });
 
       setOutputState((currentOutput) => ({
@@ -234,7 +239,7 @@ export function EditSnippetPage() {
     } finally {
       setIsRunning(false);
     }
-  }, [code, currentRuntime?.version, isRunning, language, outputState.stdin]);
+  }, [canRun, code, currentRuntime?.version, isRunning, language, outputState.stdin]);
 
   const handleSave = useCallback(async () => {
     if (!snippetId || !canSave) return;
@@ -371,7 +376,8 @@ export function EditSnippetPage() {
             <button
               type="button"
               onClick={handleRun}
-              disabled={isRunning}
+              disabled={isRunning || !canRun}
+              title={canRun ? undefined : RUN_DISABLED_TOOLTIP}
               className="h-9 rounded-md bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-70"
               aria-live="polite"
             >

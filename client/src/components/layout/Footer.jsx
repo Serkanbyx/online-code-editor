@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom';
 
 const RESOURCE_LINKS = [
-  { label: 'Documentation', href: 'https://github.com/', external: true },
-  { label: 'GitHub', href: 'https://github.com/', external: true },
+  { label: 'Documentation', href: 'https://github.com/Serkanbyx/codenest#readme', external: true },
+  { label: 'GitHub', href: 'https://github.com/Serkanbyx/codenest', external: true },
 ];
 
 const LEGAL_LINKS = [
-  { label: 'Privacy', to: '/' },
-  { label: 'Terms', to: '/' },
+  { label: 'Privacy', href: 'https://github.com/Serkanbyx/codenest/blob/main/SECURITY.md', external: true },
+  { label: 'Terms', href: 'https://github.com/Serkanbyx/codenest/blob/main/CODE_OF_CONDUCT.md', external: true },
 ];
 
 const CREATOR_LINKS = [
@@ -54,9 +54,20 @@ export function Footer() {
           <ul className="mt-3 space-y-1.5 text-sm">
             {LEGAL_LINKS.map((link) => (
               <li key={link.label}>
-                <Link to={link.to} className="text-fg/80 transition-colors hover:text-fg">
-                  {link.label}
-                </Link>
+                {link.external ? (
+                  <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-fg/80 transition-colors hover:text-fg"
+                  >
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link to={link.to} className="text-fg/80 transition-colors hover:text-fg">
+                    {link.label}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>

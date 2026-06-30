@@ -87,7 +87,7 @@ export function getMe(req, res) {
 }
 
 export async function updateProfile(req, res) {
-  const updates = pickDefined(req.body, ['displayName', 'bio', 'avatarUrl']);
+  const updates = pickDefined(req.body, ['displayName', 'bio']);
   req.user.set(updates);
   await req.user.save();
 

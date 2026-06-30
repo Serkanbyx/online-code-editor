@@ -21,11 +21,15 @@ const STATUS_META = {
 const SHARE_TOOLTIP =
   "Anyone with this link who is signed in can join the room. Private rooms also require an invite via 'Add participant' (admin/owner).";
 
+const RUN_DISABLED_TOOLTIP =
+  'This language is for editing only. Switch to a supported runtime language to run code.';
+
 export function EditorToolbar({
   room,
   isOwner,
   savingRoom,
   isRunning = false,
+  canRun = true,
   status = 'disconnected',
   onRename,
   onLanguageChange,
@@ -124,7 +128,8 @@ export function EditorToolbar({
         <button
           type="button"
           onClick={onRun}
-          disabled={isRunning}
+          disabled={isRunning || !canRun}
+          title={canRun ? undefined : RUN_DISABLED_TOOLTIP}
           className="h-9 rounded-md bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-70"
           aria-live="polite"
         >

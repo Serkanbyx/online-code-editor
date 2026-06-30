@@ -44,11 +44,6 @@ export const validateUpdateProfile = validate([
     .withMessage('Display name must be 1-48 characters.')
     .escape(),
   body('bio').optional().trim().isLength({ max: 240 }).withMessage('Bio must be at most 240 characters.').escape(),
-  body('avatarUrl')
-    .optional({ values: 'falsy' })
-    .trim()
-    .isURL({ protocols: ['http', 'https'], require_protocol: true })
-    .withMessage('Avatar URL must be a valid HTTP or HTTPS URL.'),
 ]);
 
 export const validateChangePassword = validate([

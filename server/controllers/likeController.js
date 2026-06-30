@@ -54,7 +54,11 @@ export async function toggleLike(req, res) {
   const deletedLike = await Like.findOneAndDelete(likeFilter);
 
   if (deletedLike) {
-    const updatedSnippet = await Snippet.findByIdAndUpdate(snippet._id, { $inc: { likesCount: -1 } }, { new: true }).select('likesCount');
+    const updatedSnippet = await Snippet.findByIdAndUpdate(
+      snippet._id,
+      [{ $set: { likesCount: { $max: [0, { $subtract: ['$likesCount', 1] }] } } }],
+      { new: true },
+    ).select('likesCount');
 
     res.json({
       liked: false,

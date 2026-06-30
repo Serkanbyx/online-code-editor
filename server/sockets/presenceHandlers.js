@@ -125,6 +125,12 @@ export default function registerPresenceHandlers(io, socket) {
         return;
       }
 
+      if (room.language !== language) {
+        room.language = language;
+        room.lastActiveAt = new Date();
+        await room.save();
+      }
+
       io.to(roomId).emit('room:languageChange', {
         roomId,
         language,

@@ -16,6 +16,6 @@ export default function validate(validationChains) {
       message: error.msg,
     }));
 
-    res.status(400).json({ success: false, errors });
+    res.status(400).json({ message: 'Validation failed', errors });
   };
 }

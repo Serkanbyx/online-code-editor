@@ -5,7 +5,7 @@
 
   <h1>CodeNest</h1>
 
-  <p><em>A full-stack realtime collaborative code editor with Monaco-powered IDE, Yjs CRDT synchronization, multi-language code execution via Piston, snippet sharing with social features, and a complete admin moderation panel.</em></p>
+  <p><em>A full-stack realtime collaborative code editor with Monaco-powered IDE, Yjs CRDT synchronization, multi-language code execution, snippet sharing with social features, and an admin moderation panel.</em></p>
 
   <p>
     <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License" />
@@ -18,16 +18,22 @@
     <img src="https://img.shields.io/badge/Monaco-Editor-68217A?style=flat-square&logo=visual-studio-code&logoColor=white" alt="Monaco Editor" />
     <img src="https://img.shields.io/badge/Yjs-CRDT-FF6B6B?style=flat-square" alt="Yjs CRDT" />
     <img src="https://img.shields.io/badge/Swagger-OpenAPI_3.1-85EA2D?style=flat-square&logo=swagger&logoColor=black" alt="Swagger" />
+    <img src="https://img.shields.io/badge/API-Render-46E3B7?style=flat-square&logo=render&logoColor=white" alt="API on Render" />
+    <img src="https://img.shields.io/badge/Web-Netlify-00C7B7?style=flat-square&logo=netlify&logoColor=white" alt="Web on Netlify" />
     <img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square" alt="PRs welcome" />
   </p>
 
   <p>
+    <a href="#live-demo">Live Demo</a> •
     <a href="#features">Features</a> •
-    <a href="#screenshots">Screenshots</a> •
     <a href="#installation">Quick Start</a> •
     <a href="#api-endpoints">API Docs</a> •
-    <a href="#architecture">Architecture</a>
+    <a href="#screenshots">Screenshots</a>
   </p>
+
+  <a href="./assets/screenshots/landing.png">
+    <img src="./assets/screenshots/landing.png" alt="CodeNest landing page" />
+  </a>
 </div>
 
 ---
@@ -36,22 +42,32 @@
 
 - **Realtime Collaborative Editing** — Yjs CRDT-based document synchronization over WebSocket with conflict-free concurrent editing and live cursor positions
 - **Monaco Code Editor** — Full VS Code editing experience with IntelliSense, syntax highlighting for 25+ languages, customizable themes, keymaps, and minimap
-- **Multi-Language Code Execution** — Run code in JavaScript, Python, Java, Go, Rust, C/C++, and 20+ languages via the Piston execution engine
+- **Multi-Language Code Execution** — JavaScript runs in a browser sandbox; Python, Java, Go, Rust, C/C++, and 20+ languages execute via the Piston API proxy
 - **Snippet Sharing Platform** — Create, fork, tag, and share code snippets publicly with full-text search, filtering by language/tag, and popularity sorting
 - **Collaboration Rooms** — Create private or public rooms, invite participants by username, and code together with real-time presence indicators
 - **Social Features** — Like snippets, write threaded comments with replies, view public profiles, and report inappropriate content
 - **JWT Authentication** — Secure register/login flow with bcrypt password hashing, token expiry, and banned-user enforcement
-- **Role-Based Admin Panel** — Full moderation dashboard with user management, snippet/comment moderation, report queue resolution, and analytics
+- **Role-Based Admin Panel** — Moderation dashboard with user management, snippet/comment moderation, report queue resolution, and analytics
 - **Customizable Preferences** — Per-user editor settings (theme, font, tab size, keymap, word wrap, line numbers), appearance mode, and privacy controls
 - **Swagger API Documentation** — Interactive OpenAPI 3.1 docs served at `/api-docs` with all endpoints, schemas, and authentication flows
-- **Avatar Uploads** — Cloudinary-powered profile picture uploads with image optimization
+- **Avatar Uploads** — Cloudinary-powered profile picture uploads with image optimization (optional)
 - **Security Hardened** — Helmet headers, CORS whitelist, tiered rate limiting, input sanitization, express-validator schemas, and mongo-sanitize
+
+---
+
+## Live Demo
+
+Deploy your own instance using the [Deployment](#deployment) section below, or run locally with the [Quick Start](#installation) guide.
+
+After publishing, add your Netlify URL here:
+
+`https://your-codenest-app.netlify.app`
 
 ---
 
 ## Screenshots
 
-All screenshots are captured from the live deployment.
+Screenshots below are stored in `assets/screenshots/`. Replace or extend them from your live deployment for the best portfolio presentation.
 
 <table>
   <tr>
@@ -183,7 +199,7 @@ flowchart LR
 - **JSON Web Token (JWT)**: Stateless authentication with configurable expiry
 - **bcrypt**: Password hashing with salt rounds
 - **Piston API**: Sandboxed multi-language code execution proxy
-- **Cloudinary**: Cloud-based image upload and optimization
+- **Cloudinary**: Cloud-based image upload and optimization (optional)
 - **Swagger UI Express**: Interactive OpenAPI 3.1 documentation
 - **Helmet**: HTTP security headers
 - **express-rate-limit**: Tiered rate limiting (global, auth, code-run, write, admin)
@@ -207,8 +223,8 @@ flowchart LR
 **1. Clone the repository:**
 
 ```bash
-git clone https://github.com/Serkanbyx/codenest.git
-cd codenest
+git clone https://github.com/serkanbyx/online-code-editor.git
+cd online-code-editor
 ```
 
 **2. Set up environment variables:**
@@ -226,16 +242,18 @@ PORT=5000
 
 MONGO_URI=mongodb://127.0.0.1:27017/codenest
 
-JWT_SECRET=your_super_secret_key_here
+# Use a long random string in production (minimum 32 characters)
+JWT_SECRET=dev-only-change-me-before-production
 JWT_EXPIRES_IN=7d
 
+# Single origin or comma-separated list (no trailing slashes)
 CORS_ORIGIN=http://localhost:5173
 
 PISTON_BASE_URL=https://emkc.org/api/v2/piston
 
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
 
 ADMIN_EMAIL=admin@codenest.local
 ADMIN_PASSWORD=your_admin_password
@@ -287,7 +305,7 @@ The API will be available at `http://localhost:5000` and the client at `http://l
 5. **Fork a Snippet** — Clone any public snippet to your own collection and modify it
 6. **Create a Room** — Start a collaboration room and invite participants by username
 7. **Code Together** — Edit code simultaneously with live cursors and presence indicators
-8. **Run Code** — Execute code in 25+ languages directly from the editor
+8. **Run Code** — Execute JavaScript in the browser or other languages via Piston (login required)
 9. **Interact** — Like snippets, write comments, and report inappropriate content
 10. **Customize** — Adjust editor theme, font, keymap, and privacy settings
 11. **Admin Panel** — Moderators can manage users, review reports, and moderate content
@@ -298,10 +316,9 @@ The API will be available at `http://localhost:5000` and the client at `http://l
 
 ### Authentication Flow
 
-The app uses stateless JWT authentication. On login, the server issues a signed token containing the user ID. The client stores the token in memory and attaches it as a `Bearer` header on every subsequent API request.
+The app uses stateless JWT authentication. On login, the server issues a signed token containing the user ID. The client stores the token in `localStorage` and attaches it as a `Bearer` header on every subsequent API request.
 
 ```javascript
-// Axios interceptor attaches JWT automatically
 axiosInstance.interceptors.request.use((config) => {
   const token = getStoredToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -323,7 +340,9 @@ Collaboration is powered by two parallel WebSocket channels:
 
 ### Code Execution
 
-Code execution is proxied through the Piston API. The server validates the language against a supported list, resolves the latest runtime version, and forwards the code payload. Results (stdout, stderr, exit code) are returned to the client.
+- **JavaScript** runs locally in a browser Web Worker sandbox (fast feedback, no server round-trip).
+- **Other runnable languages** are proxied through the Piston API. The server validates the language, resolves the latest runtime version, and forwards the payload. Results (stdout, stderr, exit code) are returned to the client.
+- **Markup/config languages** (HTML, CSS, JSON, YAML, Markdown, SQL) are available in the editor but the Run button is disabled when no Piston runtime exists.
 
 ### Admin Moderation
 
@@ -342,7 +361,7 @@ Full interactive documentation is available at `/api-docs` (Swagger UI).
 | POST | `/api/auth/register` | No | Create a new user |
 | POST | `/api/auth/login` | No | Login and receive JWT |
 | GET | `/api/auth/me` | Yes | Get current user profile |
-| PATCH | `/api/auth/me` | Yes | Update profile (displayName, bio, avatar) |
+| PATCH | `/api/auth/me` | Yes | Update profile (displayName, bio) |
 | PATCH | `/api/auth/password` | Yes | Change password |
 | DELETE | `/api/auth/me` | Yes | Delete account |
 
@@ -452,7 +471,7 @@ A clean monorepo layout with an explicit backend / frontend split. Each panel be
 server/
 ├── config/          # env validation, db connection, swagger spec
 ├── controllers/     # auth, snippet, room, code, comment, like, report, admin, profile, upload
-├── middleware/      # auth (protect/optionalAuth/adminOnly), rateLimiters, validate, sanitize, upload, errorHandler, notFound, socketAuth
+├── middleware/      # auth, rateLimiters, validate, sanitize, upload, errorHandler, notFound, socketAuth
 ├── models/          # User, Snippet, Room, Comment, Like, Report (Mongoose schemas)
 ├── routes/          # one file per resource group (10 route files)
 ├── scripts/         # seedAdmin.js, migrateSnippetIndexes.js
@@ -471,30 +490,20 @@ server/
 
 ```
 client/
-├── public/              # static assets
+├── public/              # static assets, _redirects (SPA fallback)
 ├── src/
-│   ├── api/             # Axios instance + 11 service modules (auth, snippet, room, code, comment, like, report, admin, profile, upload)
-│   ├── components/
-│   │   ├── auth/        # AuthCard, PasswordField, PasswordStrengthMeter
-│   │   ├── common/      # Avatar, Spinner, FormField, ConfirmModal, Skeleton, EmptyState, ToggleSwitch, RoleBadge, StatusBadge…
-│   │   ├── editor/      # MonacoPane, EditorToolbar, LanguageSelect, OutputPanel, UserListSidebar, SaveSnippetModal
-│   │   ├── layout/      # Navbar, Footer
-│   │   └── snippets/    # SnippetCard, SnippetGrid, SnippetFilters, CommentThread, CommentItem
+│   ├── api/             # Axios instance + service modules
+│   ├── components/      # auth, common, editor, layout, snippets
+│   ├── config/          # production env validation
 │   ├── context/         # AuthContext, SocketContext, PreferencesContext
-│   ├── hooks/           # useYjsRoom, useSocket, useDebounce, useLocalStorage, useCopyToClipboard, useGuestId
+│   ├── hooks/           # useYjsRoom, useSocket, useDebounce, useLocalStorage…
 │   ├── layouts/         # MainLayout, AdminLayout, SettingsLayout
-│   ├── pages/
-│   │   ├── admin/       # AdminDashboardPage, AdminUsersPage, AdminSnippetsPage, AdminCommentsPage, AdminReportsPage
-│   │   ├── auth/        # LoginPage, RegisterPage
-│   │   ├── home/        # HomePage
-│   │   ├── misc/        # NotFoundPage, ForbiddenPage
-│   │   ├── profile/     # ProfilePage
-│   │   ├── rooms/       # RoomsHubPage, EditorPage
-│   │   ├── settings/    # ProfileSettingsPage, AccountSettingsPage, AppearanceSettingsPage, EditorSettingsPage, PrivacySettingsPage, NotificationsSettingsPage
-│   │   └── snippets/    # SnippetDetailPage, EditSnippetPage, MySnippetsPage
+│   ├── pages/           # home, auth, snippets, rooms, profile, settings, admin
 │   ├── routes/          # ProtectedRoute, AdminRoute, GuestOnlyRoute
+│   ├── utils/           # languages, javascriptRunner, helpers, apiError
 │   ├── App.jsx          # router + providers + scroll-to-top
 │   └── main.jsx         # entry point
+├── netlify.toml         # Netlify build + SPA redirect rules
 ├── .env.example
 └── package.json
 ```
@@ -505,17 +514,17 @@ client/
 <summary><b>Repository root</b> — docs, governance & shared assets</summary>
 
 ```
-codenest/
+online-code-editor/
 ├── client/              # → see Client panel above
 ├── server/              # → see Server panel above
 ├── docs/                # build-guide.md
 ├── assets/              # screenshots/
 ├── .github/
 │   ├── ISSUE_TEMPLATE/  # bug_report.yml, feature_request.yml, config.yml
+│   ├── CODE_OF_CONDUCT.md
+│   ├── CONTRIBUTING.md
+│   ├── SECURITY.md
 │   └── PULL_REQUEST_TEMPLATE.md
-├── CODE_OF_CONDUCT.md
-├── CONTRIBUTING.md
-├── SECURITY.md
 ├── LICENSE
 └── README.md
 ```
@@ -527,17 +536,17 @@ codenest/
 ## Security
 
 - **Helmet** — Sets strict HTTP security headers (CSP, HSTS, X-Frame-Options, etc.)
-- **CORS Whitelist** — Only the configured client origin can access the API
+- **CORS Whitelist** — Only configured client origins can access the API (comma-separated supported)
 - **Tiered Rate Limiting** — Global, auth, code-run, write, and admin rate limiters with draft-7 standard headers
 - **JWT Authentication** — Signed tokens with configurable expiry, Bearer scheme enforcement
 - **bcrypt Hashing** — Passwords hashed with 12 salt rounds, never stored in plaintext
 - **Input Validation** — All request bodies validated via express-validator schemas before reaching controllers
-- **Mongo Sanitize** — Prevents NoSQL injection by stripping `$` and `.` from user input
-- **Payload Limits** — JSON body size capped at 64KB (96KB for code execution)
+- **Mongo Sanitize** — Prevents NoSQL injection on body, params, and query
+- **Payload Limits** — JSON body size capped at 64KB; code execution endpoint allows additional headroom via `MAX_CODE_PAYLOAD_KB`
 - **Socket Authentication** — WebSocket connections require valid JWT in handshake/query params
 - **Cursor Throttling** — Token-bucket rate limiting on cursor events (20/sec) to prevent flooding
 - **Banned User Enforcement** — Banned users are rejected at both HTTP and WebSocket layers
-- **Sensitive Field Stripping** — Password and internal fields are never exposed in API responses
+- **Avatar Upload Policy** — Profile avatars can only be set via Cloudinary upload, not arbitrary URLs
 
 ---
 
@@ -561,13 +570,13 @@ codenest/
 | `NODE_ENV` | `production` |
 | `PORT` | `5000` |
 | `MONGO_URI` | Your MongoDB Atlas connection string |
-| `JWT_SECRET` | A strong random secret |
+| `JWT_SECRET` | A strong random secret (32+ characters) |
 | `JWT_EXPIRES_IN` | `7d` |
 | `CORS_ORIGIN` | Your Netlify deployment URL |
 | `PISTON_BASE_URL` | `https://emkc.org/api/v2/piston` |
-| `CLOUDINARY_CLOUD_NAME` | Your Cloudinary cloud name |
-| `CLOUDINARY_API_KEY` | Your Cloudinary API key |
-| `CLOUDINARY_API_SECRET` | Your Cloudinary API secret |
+| `CLOUDINARY_CLOUD_NAME` | Your Cloudinary cloud name (optional) |
+| `CLOUDINARY_API_KEY` | Your Cloudinary API key (optional) |
+| `CLOUDINARY_API_SECRET` | Your Cloudinary API secret (optional) |
 
 ### Frontend (Netlify)
 
@@ -577,7 +586,9 @@ codenest/
 | ------- | ----- |
 | Base Directory | `client` |
 | Build Command | `npm run build` |
-| Publish Directory | `client/dist` |
+| Publish Directory | `dist` |
+
+Netlify reads SPA redirect rules from `client/netlify.toml` (already included). A backup `client/public/_redirects` file is also provided.
 
 **2. Add environment variables:**
 
@@ -587,12 +598,6 @@ codenest/
 | `VITE_SOCKET_URL` | `https://your-api.onrender.com` |
 | `VITE_YJS_URL` | `wss://your-api.onrender.com` |
 
-**3. Add a `_redirects` file for SPA routing:**
-
-```
-/*    /index.html   200
-```
-
 > **Important:** Make sure `CORS_ORIGIN` in the backend matches your Netlify URL exactly (no trailing slash).
 
 ---
@@ -601,54 +606,48 @@ codenest/
 
 ### Completed Features
 
-✅ JWT-based authentication (register, login, password change, account deletion)
-✅ Monaco Editor with full language support and customizable settings
-✅ Real-time collaborative editing via Yjs CRDT over WebSocket
-✅ Live cursor positions and presence indicators via Socket.io
-✅ Multi-language code execution (25+ languages) via Piston
-✅ Snippet CRUD with public/private visibility and tagging
-✅ Snippet forking with lineage tracking
-✅ Full-text search across snippets (title, description, tags)
-✅ Threaded comments with nested replies
-✅ Like/unlike toggle with aggregated counts
-✅ Public user profiles with activity feeds
-✅ Collaboration rooms with participant management
-✅ Room language switching (owner-only)
-✅ Avatar upload via Cloudinary
-✅ Admin dashboard with aggregate statistics
-✅ User management (role assignment, banning)
-✅ Content moderation (snippets, comments)
-✅ Report queue with resolution actions
-✅ Customizable editor preferences (theme, font, keymap, etc.)
-✅ Privacy settings (show/hide email, likes, comments)
-✅ Protected and admin-only routes
-✅ Swagger/OpenAPI documentation
-✅ Tiered rate limiting
-✅ Security hardening (Helmet, sanitize, CORS, etc.)
+- JWT-based authentication (register, login, password change, account deletion)
+- Monaco Editor with full language support and customizable settings
+- Real-time collaborative editing via Yjs CRDT over WebSocket
+- Live cursor positions and presence indicators via Socket.io
+- Multi-language code execution (JavaScript in-browser + Piston for other runtimes)
+- Snippet CRUD with public/private visibility and tagging
+- Snippet forking with lineage tracking
+- Full-text search across snippets (title, description, tags)
+- Threaded comments with nested replies
+- Like/unlike toggle with aggregated counts
+- Public user profiles with activity feeds
+- Collaboration rooms with participant management
+- Room language switching (owner-only)
+- Avatar upload via Cloudinary
+- Admin dashboard with aggregate statistics
+- User management (role assignment, banning)
+- Content moderation (snippets, comments)
+- Report queue with resolution actions
+- Customizable editor preferences (theme, font, keymap, etc.)
+- Privacy settings (show/hide email, likes, comments)
+- Protected and admin-only routes
+- Swagger/OpenAPI documentation
+- Tiered rate limiting
+- Security hardening (Helmet, sanitize, CORS, etc.)
 
 ### Future Features
 
-- [ ] 🔮 Email verification and password reset flow
-- [ ] 🔮 OAuth integration (GitHub, Google)
-- [ ] 🔮 Real-time notifications via WebSocket
-- [ ] 🔮 Snippet version history and diff view
-- [ ] 🔮 Room chat sidebar
-- [ ] 🔮 File-based projects (multi-file editor)
-- [ ] 🔮 Embedded snippet sharing (iframe/embed code)
-- [ ] 🔮 AI-powered code suggestions
-- [ ] 🔮 Dark/light theme toggle with system preference sync
+- [ ] Email verification and password reset flow
+- [ ] OAuth integration (GitHub, Google)
+- [ ] Real-time notifications via WebSocket
+- [ ] Snippet version history and diff view
+- [ ] Room chat sidebar
+- [ ] File-based projects (multi-file editor)
+- [ ] Embedded snippet sharing (iframe/embed code)
+- [ ] AI-powered code suggestions
+- [ ] Dark/light theme toggle with system preference sync
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps:
-
-1. **Fork** the repository
-2. **Create** a feature branch: `git checkout -b feat/amazing-feature`
-3. **Commit** your changes following the convention below
-4. **Push** to the branch: `git push origin feat/amazing-feature`
-5. **Open** a Pull Request using the provided PR template
+Contributions are welcome! Please read [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md) for setup instructions, branch naming, and PR guidelines. The original step-by-step build playbook lives in [docs/build-guide.md](./docs/build-guide.md).
 
 ### Commit Message Convention
 
@@ -674,9 +673,9 @@ This project is licensed under the **MIT License** — see the [LICENSE](./LICEN
 
 **Serkan Bayraktar**
 
-- 🌐 [serkanbayraktar.com](https://serkanbayraktar.com/)
-- 🐙 [@Serkanbyx](https://github.com/Serkanbyx)
-- 📧 serkanbyx1@gmail.com
+- [serkanbayraktar.com](https://serkanbayraktar.com/)
+- [@Serkanbyx](https://github.com/Serkanbyx)
+- serkanbyx1@gmail.com
 
 ---
 
@@ -694,9 +693,9 @@ This project is licensed under the **MIT License** — see the [LICENSE](./LICEN
 
 ## Contact
 
-- 🐛 [Open an Issue](https://github.com/Serkanbyx/codenest/issues)
-- 📧 serkanbyx1@gmail.com
-- 🌐 [serkanbayraktar.com](https://serkanbayraktar.com/)
+- [Open an Issue](https://github.com/serkanbyx/online-code-editor/issues)
+- serkanbyx1@gmail.com
+- [serkanbayraktar.com](https://serkanbayraktar.com/)
 
 ---
 

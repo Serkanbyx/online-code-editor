@@ -12,6 +12,8 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "seed": "npm run seed:admin",
     "seed:admin": "node scripts/seedAdmin.js",
     "migrate": "npm run migrate:snippet-indexes",

@@ -2,19 +2,19 @@
 
 > **Archived: original build playbook.**
 > This is the 49-step roadmap used to build CodeNest from scratch. The codebase
-> has evolved since the first draft, especially around production deployment and
-> code execution: the public Piston execute API now requires authorization, so the
-> live portfolio build uses a browser-based JavaScript runner while keeping the
-> backend Piston proxy path available for future provider access or self-hosting.
-> For current architecture, setup, and deployment notes, see the project [README](../README.md).
+> may have evolved since the first draft — especially around deployment wiring,
+> governance file locations (`.github/`), and the hybrid code-execution model
+> (JavaScript in a browser Web Worker; other runnable languages via the backend
+> Piston proxy). For current setup, architecture, and deployment notes, see the
+> project [README](../README.md).
 
 ---
 
 > **Project Summary:**
-> CodeNest is a full-stack online code editor that brings the VS Code editing experience (Monaco) to the browser, lets multiple users co-edit the same document in real time using Yjs CRDT, runs JavaScript in the browser for portfolio demos, keeps a backend code-runner proxy path for future provider access, and provides a snippet library with public discovery, likes, comments, and forking. Roles include `user` (default) and `admin` (moderation, user management). Security layers cover JWT auth, helmet, strict CORS, per-route rate limiters, custom NoSQL sanitization compatible with Express 5, mass-assignment protection, ownership checks, and a 30+ item production audit. Stack: React 19 + Vite + Tailwind v4 + Monaco + Yjs on the client; Node + Express 5 + Mongoose 9 + Socket.io + y-websocket on the server.
+> CodeNest is a full-stack online code editor that brings the VS Code editing experience (Monaco) to the browser, lets multiple users co-edit the same document in real time using Yjs CRDT, runs JavaScript locally in a Web Worker sandbox, executes Python/Java/Go/Rust and other Piston-backed languages through the authenticated `/api/code/run` proxy, and provides a snippet library with public discovery, likes, comments, and forking. Roles include `user` (default) and `admin` (moderation, user management). Security layers cover JWT auth, Helmet, strict CORS, tiered rate limiters, express-validator schemas, in-place mongo-sanitize on body/params/query, mass-assignment protection, ownership checks, and avatar uploads restricted to Cloudinary. Stack: React 19 + Vite + Tailwind v4 + Monaco + Yjs on the client; Node + Express 5 + Mongoose 9 + Socket.io + y-websocket on the server.
 
 > Each step below is a self-contained prompt. Execute them in order.
-> Stack: React 19 + Vite, Node/Express 5, MongoDB/Mongoose 9, JWT, TailwindCSS v4, React Router v7, Axios, Socket.io, Yjs + y-monaco + y-websocket, Monaco Editor, browser Web Worker runner, optional Piston API proxy.
+> Stack: React 19 + Vite, Node/Express 5, MongoDB/Mongoose 9, JWT, TailwindCSS v4, React Router v7, Axios, Socket.io, Yjs + y-monaco + y-websocket, Monaco Editor, browser Web Worker runner (JavaScript), Piston API proxy (other runtimes).
 
 ---
 
@@ -114,14 +114,14 @@ flowchart LR
     Client[React + Vite Client] -->|"REST + JWT"| API[Express 5 API]
     Client -->|"Socket.io presence"| SIO[Socket.io Server]
     Client -->|"y-websocket CRDT"| Yjs[Yjs WebSocket Server]
-    Client -->|"Web Worker"| BrowserRunner[Browser JavaScript Runner]
+    Client -->|"Web Worker (JS only)"| BrowserRunner[Browser JavaScript Runner]
     API --> Mongo[(MongoDB)]
     SIO --> Mongo
-    API -->|"Optional HTTP POST"| Piston[Piston API / Self-hosted Runner]
+    API -->|"POST /execute (non-JS)"| Piston[Piston API]
     API -->|"Optional"| Cloud[Cloudinary]
 ```
 
-The single Render service runs Express, Socket.io, and y-websocket on the same HTTP server (one URL, three layers). The original guide used a server-side Piston proxy for code execution; the deployed portfolio build now runs JavaScript in a browser Web Worker because the public Piston execute endpoint requires authorization.
+The single Render service runs Express, Socket.io, and y-websocket on the same HTTP server (one URL, three layers). **Current behavior:** JavaScript runs in the browser for instant feedback; all other runnable languages go through `POST /api/code/run` → `pistonClient.execute`. Markup/config languages (HTML, CSS, JSON, YAML, Markdown, SQL) remain editor-only — disable Run when no Piston runtime exists (`canRunLanguage` helper).
 
 ---
 
@@ -136,7 +136,7 @@ Create the monorepo workspace at the project root with two top-level folders: `s
 ### Root Folder Structure
 
 ```
-codenest/
+online-code-editor/
   server/
   client/
   docs/
@@ -447,7 +447,7 @@ The order is mandatory because of the Express 5 `req.query` getter restriction.
 4. `cors({ origin: env.CORS_ORIGIN, credentials: true })`
 5. `express.json({ limit: '64kb' })` — small global cap; the code-run route accepts a slightly larger payload via its own router
 6. `express.urlencoded({ extended: true, limit: '64kb' })`
-7. Custom sanitize middleware (`middleware/sanitize.js`) that runs `mongoSanitize.sanitize(req.body)` and `mongoSanitize.sanitize(req.params)` only — never touches `req.query`
+7. Custom sanitize middleware (`middleware/sanitize.js`) that runs `mongoSanitize.sanitize()` in place on `req.body`, `req.params`, and `req.query` — never reassigns `req.query`
 8. `morgan('dev')` only when `NODE_ENV !== 'production'`
 9. Global rate limiter (see below) on all `/api` routes
 10. Routes
@@ -461,11 +461,12 @@ import mongoSanitize from 'express-mongo-sanitize';
 export default function sanitize(req, _res, next) {
   if (req.body) mongoSanitize.sanitize(req.body);
   if (req.params) mongoSanitize.sanitize(req.params);
+  if (req.query) mongoSanitize.sanitize(req.query);
   next();
 }
 ```
 
-> **Express 5 critical:** `req.query` is a read-only getter. Calling `app.use(mongoSanitize())` reassigns it and crashes every request with `TypeError: Cannot set property query of #<IncomingMessage> which has only a getter`. The pattern above touches `req.body` and `req.params` only.
+> **Express 5 critical:** `req.query` is a read-only getter. Calling `app.use(mongoSanitize())` reassigns it and crashes every request with `TypeError: Cannot set property query of #<IncomingMessage> which has only a getter`. The pattern above mutates objects in place via `mongoSanitize.sanitize()` and never assigns to `req.query`.
 
 ### `middleware/rateLimiters.js`
 
@@ -487,7 +488,7 @@ Define and export five named limiters. All use `standardHeaders: 'draft-7'`, `le
 
 Mirror every key from `env.js` with empty values or safe placeholders. This file is checked in; the `.env` file is not.
 
-**SECURITY:** `helmet`, `x-powered-by` disabled, strict CORS allowlist, body size capped at 64 KB globally, sanitize layer hardened against `$`/`.` operators on body and params, separate rate limiters per route group, JWT secret length enforced at startup. The Express 5 `req.query` immutability rule is applied throughout — no middleware ever assigns to it, and `hpp` is explicitly excluded from dependencies.
+**SECURITY:** `helmet`, `x-powered-by` disabled, strict CORS allowlist, body size capped at 64 KB globally, sanitize layer hardened against `$`/`.` operators on body, params, and query (in-place only), separate rate limiters per route group, JWT secret length enforced at startup. The Express 5 `req.query` immutability rule is applied throughout — no middleware ever assigns to it, and `hpp` is explicitly excluded from dependencies.
 
 ---
 
@@ -600,7 +601,7 @@ This step builds the authentication layer on top of the User model from STEP 3: 
 | `register` | `POST /api/auth/register` | Whitelist `{ username, displayName, email, password }`. Reject duplicate username/email with generic `Email or username unavailable`. Create user, return `{ user, token }`. `role` is never read from `req.body`. |
 | `login` | `POST /api/auth/login` | Find user by email with `+password`. If user missing OR password mismatch OR `isBanned`, return 401 `Invalid email or password`. On success update `lastLoginAt`, return `{ user, token }`. |
 | `getMe` | `GET /api/auth/me` (`protect`) | Return current user. |
-| `updateProfile` | `PATCH /api/auth/me` (`protect`) | Whitelist `{ displayName, bio, avatarUrl }`. Return updated user. |
+| `updateProfile` | `PATCH /api/auth/me` (`protect`) | Whitelist `{ displayName, bio }` only — avatars are set exclusively via `POST /api/upload/avatar`. Return updated user. |
 | `changePassword` | `PATCH /api/auth/password` (`protect`) | Require `{ currentPassword, newPassword }`. Verify current. Hash via pre-save. |
 | `deleteAccount` | `DELETE /api/auth/me` (`protect`) | Require `{ password }`. On match, cascade delete: snippets, comments, likes, reports authored by user, and remove from rooms `participants`. Then delete user. |
 
@@ -626,7 +627,7 @@ Centralized error formatter:
 
 ### `scripts/seedAdmin.js`
 
-Connects DB, finds user by `ADMIN_EMAIL`. If absent, creates one with `role: 'admin'` using `ADMIN_PASSWORD`. Idempotent. Logs the resulting credentials banner once.
+Connects DB, finds user by `ADMIN_EMAIL`. If absent, creates one with `role: 'admin'` using `ADMIN_PASSWORD`. If present, ensures `role: 'admin'` and optionally refreshes the password when `ADMIN_PASSWORD` is set. Idempotent — no duplicate admins. Logs what happened (created, updated, or already exists).
 
 **SECURITY (auth layer):**
 - `role` is never accepted from any public endpoint — `register` and `updateProfile` whitelist explicitly.
@@ -979,10 +980,10 @@ The cache uses a simple `{ value, expiresAt }` module-level variable.
 
 ### Code Run Router Body Limit
 
-Mount the code router with its own body parser to allow up to 96 KB while keeping the global cap at 64 KB:
+Mount the code router with its own body parser sized from `MAX_CODE_PAYLOAD_KB` plus headroom for stdin and metadata:
 
 ```js
-app.use('/api/code', express.json({ limit: '96kb' }), codeRoutes);
+app.use('/api/code', express.json({ limit: `${env.MAX_CODE_PAYLOAD_KB + 32}kb` }), codeRoutes);
 ```
 
 **SECURITY:**
@@ -1564,7 +1565,7 @@ Each file exports an object with named methods. They all import the shared axios
 | `commentService.js` | `listForSnippet(snippetId, params)`, `listReplies(commentId, params)`, `create(data)`, `update(id, data)`, `remove(id)` |
 | `likeService.js` | `toggle(snippetId)`, `myLikes(params)`, `hasLiked(snippetId)` |
 | `roomService.js` | `create(data)`, `getMy(params)`, `getById(roomId)`, `join(roomId)`, `leave(roomId)`, `update(roomId, data)`, `remove(roomId)`, `addParticipant(roomId, username)` |
-| `codeService.js` | `runtimes()`, `run(data)` |
+| `codeService.js` | `runtimes()`, `run(data)` — **hybrid execution:** if `data.language === 'javascript'`, run via `runJavaScriptInBrowser()` (Web Worker in `utils/javascriptRunner.js`); otherwise `POST /api/code/run` through axios. Pass `version` from the cached runtime catalog when available. |
 | `uploadService.js` | `avatar(formData)` (sets `Content-Type: multipart/form-data`) |
 | `profileService.js` | `getPublic(username)`, `getSnippets(username, params)`, `getLikes(username, params)`, `getComments(username, params)`, `updatePreferences(data)` |
 | `adminService.js` | one method per endpoint from STEPS 17a/b/c (`getStats`, `listUsers`, `getUserById`, `updateUserRole`, `banUser`, `deleteUser`, `listSnippets`, `moderateSnippet`, `deleteSnippet`, `listComments`, `moderateComment`, `listReports`, `resolveReport`) |
@@ -1952,6 +1953,8 @@ Use `EDITOR_DEFAULT_OPTIONS` in the room editor and `EDITOR_VIEWER_OPTIONS` in t
 
 This step does NOT yet wire Yjs or Run; it only ensures the layout, toolbar, language select, theme toggle, share button, and Monaco mount work in isolation. The pane uses local state for code as a placeholder until Step 33 replaces it with the Yjs binding.
 
+After the room loads successfully, call `roomService.join(roomId)` once (best-effort) so MongoDB `participants` stays in sync with Socket.io presence. Emit `socket.emit('room:join')` in a separate effect as already planned for Step 33/34.
+
 **SECURITY:**
 - Owner-only controls (rename, language change) check `room.owner === user._id` client-side; the server route enforces the same.
 - Share button copies the URL only; it does not include the JWT in the link.
@@ -2098,10 +2101,13 @@ On `EditorPage` unmount:
 
 ### Run Flow
 
-1. Build the request body: `{ language: room.language, code: ytext.toString(), stdin: outputState.stdin }`.
-2. POST `/api/code/run` via `codeService.run`.
-3. On success, write to `OutputPanel` state: `{ stdout, stderr, code: exitCode, signal, version }`.
-4. On error, write `{ stderr: err.message }` and toast a friendly `Run failed` message.
+1. Load runtime catalog once via `codeService.runtimes()`; derive `canRunLanguage(language, runtimes)` — JavaScript is always runnable; other languages require a matching Piston runtime. Disable the Run button (with tooltip) for editor-only languages such as HTML/CSS/JSON.
+2. Build the request body: `{ language, code: ytext.toString(), stdin: outputState.stdin, version }` — omit `version` for JavaScript; pass the latest cached version for Piston-backed languages.
+3. Call `codeService.run(body)`:
+   - **JavaScript** → local Web Worker sandbox (`utils/javascriptRunner.js`, 4 s timeout, network APIs stubbed).
+   - **Other runnable languages** → authenticated `POST /api/code/run`.
+4. On success, write to `OutputPanel` state: `{ stdout, stderr, code: exitCode, signal, version }`.
+5. On error, write `{ stderr: err.message }` and toast a friendly `Run failed` message.
 
 ### `components/editor/OutputPanel.jsx`
 
@@ -2168,7 +2174,8 @@ Loads `snippetService.getById(id)`. If the current user is not the author, redir
 
 Layout mirrors the editor page but with no Yjs/room concepts:
 - A solo Monaco editor bound to local state (no CRDT).
-- A toolbar with `Title` input, language select, theme toggle, `Cancel`, `Save`, `Delete` buttons.
+- A toolbar with `Title` input, language select, theme toggle, `Cancel`, `Save`, `Delete`, and **Run** buttons.
+- Reuse the Step 35 run flow (`codeService.run`, runtime catalog, `canRunLanguage`, `OutputPanel`).
 - A small `Run` button that uses the same `codeService.run` flow (no room).
 - `Save` calls `snippetService.update(id, payload)`.
 - `Delete` opens `<ConfirmModal />`, then calls `snippetService.remove(id)`.
@@ -2558,7 +2565,9 @@ Centered card: large `404`, message `We couldn't find the page you're looking fo
 
 ## STEP 47 — README & Documentation
 
-Create `README.md` at the project root. Sections in order:
+Create `README.md` at the project root and keep governance files under `.github/` (`CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, `SECURITY.md`, issue templates, PR template). Link to this guide at `docs/build-guide.md`. Repository slug: `serkanbyx/online-code-editor`.
+
+Sections in order:
 
 ### Header
 
@@ -2568,7 +2577,7 @@ Create `README.md` at the project root. Sections in order:
 
 ### Features
 
-Bullet list of every shipped feature: realtime co-editing via Yjs CRDT, Monaco-powered editing, 30+ languages via Piston, snippet save/share/fork, public discovery with search/filter, comments + replies, likes, user profiles with privacy preferences, admin moderation, settings (theme, editor, density), responsive UI.
+Bullet list of every shipped feature: realtime co-editing via Yjs CRDT, Monaco-powered editing, hybrid code execution (JavaScript in-browser + Piston for other runtimes), snippet save/share/fork, public discovery with search/filter, comments + replies, likes, user profiles with privacy preferences, admin moderation, settings (theme, editor, density), responsive UI.
 
 ### Roles & Permissions Table
 
@@ -2651,7 +2660,7 @@ Refer to STEP 49 with high-level summary.
 Pre-deploy sweep:
 
 - Remove every `console.log` outside of intentional `console.error` in `errorHandler.js`.
-- Run `eslint .` on both `server/` and `client/` and clear all warnings.
+- Run `npm run lint` in both `server/` and `client/` (scripts added in Phase 5) and clear all warnings.
 - Compare `.env` to `.env.example` in both folders; ensure every key exists in `.env.example` with empty/safe placeholder.
 - Search for any leftover TODO/FIXME comments and either resolve or document.
 - Confirm `package.json` `dependencies` vs `devDependencies` split is correct (no test libs in production).
@@ -2668,7 +2677,7 @@ Pre-deploy sweep:
 1. Create a new project and a Free-tier cluster.
 2. Create a database user with a 24+ char generated password.
 3. Network Access → Allow access from anywhere only if Render's IP cannot be pinned; otherwise restrict to Render's egress.
-4. Copy the connection string and replace `<password>` and database name (`codenest`).
+4. Copy the connection string and replace `<password>` and database name (e.g. `codenest` or `online-code-editor`).
 
 ### Render Backend
 
@@ -2687,7 +2696,7 @@ Environment variables:
 | `MONGO_URI` | Atlas connection string |
 | `JWT_SECRET` | generated string ≥ 32 chars (verify or app exits) |
 | `JWT_EXPIRES_IN` | `7d` |
-| `CORS_ORIGIN` | exact Netlify URL, e.g. `https://codenest.netlify.app` |
+| `CORS_ORIGIN` | exact Netlify URL, e.g. `https://your-app.netlify.app` (comma-separated list supported for previews) |
 | `PISTON_BASE_URL` | `https://emkc.org/api/v2/piston` |
 | `MAX_CODE_PAYLOAD_KB` | `64` |
 | `CLOUDINARY_*` | filled if avatars enabled |
@@ -2721,20 +2730,25 @@ Together, the monitor keeps the service warm 24/7 (free) and the client UX grace
 
 - Base directory: `client/`
 - Build command: `npm run build`
-- Publish directory: `client/dist`
+- Publish directory: `dist` (relative to base directory)
 
-`client/netlify.toml`:
+`client/netlify.toml` (already included):
 
 ```toml
 [build]
-  publish = "dist"
+  base    = "client"
   command = "npm run build"
+  publish = "dist"
 
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
+  from   = "/*"
+  to     = "/index.html"
   status = 200
 ```
+
+Optional backup: `client/public/_redirects` with `/* /index.html 200`.
+
+Add `src/config/env.js` and call `validateClientEnv()` from `main.jsx` so production builds fail fast when `VITE_*` variables are missing.
 
 Environment variables:
 
@@ -2888,7 +2902,7 @@ This is a debugging reference. When something breaks, check this table first —
 
 | Symptom | Root Cause | Fix |
 |---|---|---|
-| Every request returns `500 TypeError: Cannot set property query of #<IncomingMessage> which has only a getter` | A middleware (`hpp` or `mongoSanitize()` as default middleware) is reassigning `req.query`, which is read-only in Express 5 | Remove `hpp` from dependencies. Replace `app.use(mongoSanitize())` with the custom `sanitize.js` middleware from Step 2 that touches only `req.body` and `req.params` |
+| Every request returns `500 TypeError: Cannot set property query of #<IncomingMessage> which has only a getter` | A middleware (`hpp` or `app.use(mongoSanitize())`) reassigns `req.query`, which is read-only in Express 5 | Remove `hpp` from dependencies. Use the custom `sanitize.js` middleware from Step 2 that calls `mongoSanitize.sanitize()` in place on `body`, `params`, and `query` — never `app.use(mongoSanitize())` |
 | `TypeError: next is not a function` thrown from a Mongoose pre-save hook | Mongoose 9 removed the `next` parameter from middleware | Rewrite the hook as `async function () { ... }` (no `next`); use `return` for early exit instead of `return next()` |
 | Rate limiter sees the same IP for everyone (every request gets blocked together) | Render's reverse proxy is in front; Express thinks every request comes from the proxy | `app.set('trust proxy', 1)` in Step 2 must be present |
 | `mongoose.connect` succeeds but queries hang in production | Atlas IP whitelist does not include Render's egress | Allow `0.0.0.0/0` in Atlas (compensated by strong DB credentials) |
@@ -2931,6 +2945,7 @@ This is a debugging reference. When something breaks, check this table first —
 | Public snippet page takes 3+ seconds to load | List endpoint returns full `code` for every item (12 × ~50KB) | Apply the projection in Step 6 (`.select('-code')`) |
 | Like spam by repeated clicks creates duplicate Like documents | No unique index on `(user, snippet)` | Add the compound unique index from Step 7 |
 | Search query containing `((((((((` hangs the server | Unescaped regex in `$regex` filter (ReDoS) | Always pass through `escapeRegex` (Step 6) |
+| Python/Java run returns 503 in the editor | Language has no Piston runtime (e.g. HTML/CSS) or client never calls `/api/code/run` | Use `canRunLanguage()` from `/code/runtimes`; wire `codeService.run` to Piston for non-JS languages |
 
 ## Deployment
 
@@ -2989,7 +3004,8 @@ Run these checks before moving from one phase to the next. They are designed to 
 - [ ] Realtime co-editing works: open `/room/<id>` in two browsers; typing in one shows in the other within 200 ms
 - [ ] Remote cursor color matches between sessions for the same user
 - [ ] Closing a tab removes the user from the sidebar within 5 seconds (awareness TTL)
-- [ ] Run code works for at least 5 different languages
+- [ ] Run code works for JavaScript (browser) and at least 4 Piston-backed languages (e.g. Python, Java, C++, Go)
+- [ ] Run button is disabled with tooltip for non-runnable editor languages (HTML, CSS, JSON)
 - [ ] Saving a snippet from a room creates a row in `/me/snippets`
 - [ ] Forking a public snippet creates a private copy authored by the current user
 - [ ] Each settings toggle persists across a full page refresh
@@ -2998,7 +3014,8 @@ Run these checks before moving from one phase to the next. They are designed to 
 
 ## Before Final Deploy (Polish → Production)
 
-- [ ] `npm run build` completes for both `server` and `client` with zero warnings
+- [ ] `npm run lint` passes in both `client/` and `server/`
+- [ ] `npm run build` completes for `client/` with zero errors
 - [ ] No `console.log` in `server/` outside of `errorHandler.js` (intentional `console.error` is fine)
 - [ ] No `console.log` in `client/` outside of explicit dev-only blocks
 - [ ] `.env.example` matches every key used in code (run a diff)
