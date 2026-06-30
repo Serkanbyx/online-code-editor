@@ -57,17 +57,15 @@
 
 ## Live Demo
 
+**[https://online-code-editorr.netlify.app/](https://online-code-editorr.netlify.app/)**
+
 Deploy your own instance using the [Deployment](#deployment) section below, or run locally with the [Quick Start](#installation) guide.
-
-After publishing, add your Netlify URL here:
-
-`https://your-codenest-app.netlify.app`
 
 ---
 
 ## Screenshots
 
-Screenshots below are stored in `assets/screenshots/`. Replace or extend them from your live deployment for the best portfolio presentation.
+Screenshots below are captured from the [live demo](https://online-code-editorr.netlify.app/) and stored in `assets/screenshots/`.
 
 <table>
   <tr>
